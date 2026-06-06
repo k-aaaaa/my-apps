@@ -3,14 +3,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>資産形成管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 pb-20">
-    <header class="bg-indigo-600 text-white p-4 sticky top-0 flex justify-between shadow-md">
-        <h1 class="font-bold">資産形成予測</h1>
+<body class="bg-slate-50 pb-24">
+    <header class="bg-indigo-600 text-white p-4 sticky top-0 z-10 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">資産予測</h1>
         <div class="flex gap-2">
             <button onclick="syncCloud()" id="sync-btn">☁️</button>
             <button onclick="showTab('settings')">⚙️</button>
@@ -20,31 +21,33 @@
     <main class="p-4 max-w-md mx-auto">
         <div id="dash" class="tab-content active space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-sm border text-center">
-                <p class="text-gray-500 text-sm">30年後の予測</p>
+                <p class="text-gray-500 text-sm">30年後の予測額合計</p>
                 <p id="total-projection" class="text-4xl font-black text-indigo-600">¥0</p>
-                <div id="chart-area" class="h-32 flex items-end justify-between gap-1 mt-4">
-                    <!-- JSでバーを生成 -->
-                </div>
+                <div id="chart-area" class="h-32 flex items-end justify-between gap-1 mt-6"></div>
             </div>
             <div id="invest-list" class="space-y-3"></div>
-            <button onclick="showTab('calc')" class="w-full py-4 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-400 font-bold">+ 設定を追加</button>
+            <button onclick="showTab('calc')" class="w-full py-4 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-400 font-bold">+ 新規積立を追加</button>
         </div>
 
         <div id="calc" class="tab-content hidden space-y-4">
             <div class="bg-white p-6 rounded-2xl shadow-md border">
-                <input type="text" id="in-name" class="w-full text-lg p-2 border-b mb-4" placeholder="名称（例：NISA）">
-                <input type="number" id="in-monthly" class="w-full text-2xl font-bold p-2 border-b mb-4" placeholder="毎月の積立額">
-                <input type="number" id="in-rate" class="w-full text-2xl font-bold p-2 border-b mb-4" placeholder="利回り(%)">
-                <button onclick="saveInvestment()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold">保存</button>
+                <h2 class="font-bold mb-4">積立の設定</h2>
+                <div class="space-y-4">
+                    <input type="text" id="in-name" class="w-full text-lg p-2 border-b outline-none" placeholder="名称（例：NISA）">
+                    <input type="number" id="in-monthly" class="w-full text-2xl font-bold p-2 border-b outline-none" placeholder="毎月の額">
+                    <input type="number" id="in-rate" class="w-full text-2xl font-bold p-2 border-b outline-none" placeholder="年利 (%)">
+                    <button onclick="saveInvestment()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold">保存</button>
+                    <button onclick="showTab('dash')" class="w-full text-gray-400 text-sm">戻る</button>
+                </div>
             </div>
         </div>
 
         <div id="settings" class="tab-content hidden space-y-4">
-            <div class="bg-white p-4 rounded-xl shadow border">
-                <h3 class="font-bold mb-2">💾 バックアップ</h3>
-                <button onclick="downloadFile()" class="w-full bg-blue-500 text-white p-2 rounded mb-2 text-sm">ファイル保存</button>
-                <input type="text" id="gas-url" class="w-full border p-2 text-xs mb-2" placeholder="GAS URLを貼り付け">
-                <button onclick="saveGasUrl()" class="w-full bg-green-600 text-white p-2 rounded text-sm">URLを保存</button>
+            <div class="bg-white p-4 rounded-xl shadow border space-y-4">
+                <button onclick="downloadFile()" class="w-full bg-blue-500 text-white p-2 rounded text-sm">ファイル保存</button>
+                <hr>
+                <input type="text" id="gas-url" class="w-full border p-2 text-xs rounded" placeholder="GAS URL">
+                <button onclick="saveGasUrl()" class="w-full bg-green-600 text-white p-2 rounded text-sm">URL保存</button>
             </div>
         </div>
     </main>
