@@ -1,0 +1,23 @@
+/* File: style.css */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* クラウド同期中の回転アニメーション */
+#sync-btn.loading {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ボタンの押し込み感 */
+button:active {
+    transform: scale(0.96);
+}
+
+nav button.active-nav {
+    color: #f97316; /* orange-500 */
+}

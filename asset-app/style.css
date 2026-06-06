@@ -1,0 +1,6 @@
+/* File: style.css */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.bar { transition: height 0.5s ease-out; }
+#sync-btn.loading { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
