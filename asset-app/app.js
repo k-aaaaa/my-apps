@@ -1,4 +1,23 @@
 // File: app.js
+
+// --- 簡易パスワード機能 ---
+(function() {
+    const MY_PASSWORD = "0531"; // ←ここを書き換えてください
+    const authKey = "app_authenticated";
+
+    // すでに認証済みかチェック
+    if (sessionStorage.getItem(authKey) !== "true") {
+        const input = prompt("パスワードを入力してください");
+        if (input === MY_PASSWORD) {
+            sessionStorage.setItem(authKey, "true");
+        } else {
+            alert("パスワードが違います");
+            document.body.innerHTML = "<h1>認証が必要です。再読み込みしてください。</h1>";
+            window.stop(); // 読み込み停止
+        }
+    }
+})();
+// -----------------------
 let investments = JSON.parse(localStorage.getItem('asset_data')) || [];
 let GAS_URL = localStorage.getItem('asset_gas_url') || "";
 
