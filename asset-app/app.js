@@ -18,9 +18,9 @@
     }
 })();
 
-// データ状態
+// データ状態（currentAmountを追加）
 let state = JSON.parse(localStorage.getItem('asset_data')) || {
-    monthly: 30000, rate: 5, years: 20, goal: 20000000
+    currentAmount: 0, monthly: 30000, rate: 5, years: 20, goal: 20000000
 };
 let GAS_URL = localStorage.getItem('asset_gas_url') || "";
 
@@ -50,14 +50,16 @@ function showTab(tabId) {
     document.getElementById('header-title').innerText = titles[tabId];
 }
 
-// 複利計算ロジック
+// 複利計算ロジック（現在の資産額をベースに計算）
 function calculateCompound() {
-    let principal = 0;
+    // スタート金額を「現在の資産額」にする
+    let principal = state.currentAmount || 0; 
     const m = state.monthly;
     const r = state.rate / 100;
     let data = [];
+    
+    // 現在の金額もグラフの最初に入れる場合は i=0 から処理しますが、今回は1年後から描画
     for(let i=1; i<=state.years; i++) {
-        // 年に1回の複利計算（簡易版）
         principal = (principal + (m * 12)) * (1 + r);
         data.push(Math.round(principal));
     }
@@ -66,10 +68,11 @@ function calculateCompound() {
 
 // シミュレーション保存
 function saveSimulation() {
-    state.monthly = Number(document.getElementById('input-monthly').value);
-    state.rate = Number(document.getElementById('input-rate').value);
-    state.years = Number(document.getElementById('input-years').value);
-    state.goal = Number(document.getElementById('input-goal').value);
+    state.currentAmount = Number(document.getElementById('input-current').value) || 0;
+    state.monthly = Number(document.getElementById('input-monthly').value) || 0;
+    state.rate = Number(document.getElementById('input-rate').value) || 0;
+    state.years = Number(document.getElementById('input-years').value) || 1;
+    state.goal = Number(document.getElementById('input-goal').value) || 0;
     saveLocal();
     showToast("📊 シミュレーションを更新しました！");
     showTab('home');
@@ -113,6 +116,7 @@ function formatJPY(num) {
 
 function render() {
     // フォームへの値セット
+    document.getElementById('input-current').value = state.currentAmount || 0;
     document.getElementById('input-monthly').value = state.monthly;
     document.getElementById('input-rate').value = state.rate;
     document.getElementById('input-years').value = state.years;
@@ -120,7 +124,7 @@ function render() {
     document.getElementById('gas-url').value = GAS_URL;
 
     const dataList = calculateCompound();
-    const finalAmount = dataList.length > 0 ? dataList[dataList.length - 1] : 0;
+    const finalAmount = dataList.length > 0 ? dataList[dataList.length - 1] : (state.currentAmount || 0);
     
     // ダッシュボード表示
     document.getElementById('future-amount').innerText = formatJPY(finalAmount);
@@ -128,7 +132,7 @@ function render() {
 
     // プログレスバーの計算
     let percent = Math.min(100, Math.round((finalAmount / state.goal) * 100));
-    if (isNaN(percent)) percent = 0;
+    if (isNaN(percent) || state.goal === 0) percent = 0;
     document.getElementById('goal-percent').innerText = percent + "%";
     document.getElementById('progress-bar').style.width = percent + "%";
     
@@ -139,11 +143,13 @@ function render() {
     // グラフの描画
     const chart = document.getElementById('chart-container');
     chart.innerHTML = '';
-    const maxVal = Math.max(...dataList, state.goal, 1); // 最大値の基準
+    
+    // グラフの最大値の基準（現在額も考慮）
+    const current = state.currentAmount || 0;
+    const maxVal = Math.max(...dataList, state.goal, current, 1); 
     
     dataList.forEach((val, idx) => {
         const heightPercent = (val / maxVal) * 100;
-        // 5年ごとに濃い色にするなどの工夫
         const barColor = (idx + 1 === state.years) ? 'bg-[#2d6a4f]' : 'bg-[#95d5b2]';
         chart.innerHTML += `<div class="flex-1 ${barColor} rounded-t-sm bar-grow opacity-90" style="height: ${heightPercent}%;" title="${idx+1}年後: ${formatJPY(val)}"></div>`;
     });

@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#f2fcf5] pb-24 text-gray-700"> <header class="bg-[#b7e4c7] text-[#2d6a4f] p-4 sticky top-0 z-10 shadow-sm flex justify-between items-center">
+<body class="bg-[#f2fcf5] pb-24 text-gray-700">
+    <header class="bg-[#b7e4c7] text-[#2d6a4f] p-4 sticky top-0 z-10 shadow-sm flex justify-between items-center">
         <h1 id="header-title" class="text-xl font-bold tracking-wide">💰 ダッシュボード</h1>
         <div class="flex gap-3">
             <button onclick="syncCloud()" id="sync-btn" class="text-xl drop-shadow-sm">☁️</button>
@@ -48,6 +49,10 @@
             <h2 class="text-lg font-bold text-gray-600">積立と目標の設定</h2>
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-green-50 space-y-5">
                 <div>
+                    <label class="block text-sm font-bold text-[#2d6a4f] mb-1">現在の資産額 (円)</label>
+                    <input type="number" id="input-current" class="w-full border-b-2 border-[#52b788] p-2 text-xl font-bold outline-none bg-[#eaf4f4] rounded-t-md text-gray-700" value="0">
+                </div>
+                <div>
                     <label class="block text-sm font-bold text-gray-500 mb-1">毎月の積立額 (円)</label>
                     <input type="number" id="input-monthly" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent text-gray-700" value="30000">
                 </div>
@@ -56,10 +61,10 @@
                     <input type="number" id="input-rate" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent text-gray-700" value="5" step="0.1">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-500 mb-1">積立期間 (年)</label>
+                    <label class="block text-sm font-bold text-gray-500 mb-1">これからの積立期間 (年)</label>
                     <input type="number" id="input-years" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent text-gray-700" value="20">
                 </div>
-                <div class="bg-[#f2fcf5] p-3 rounded-xl border border-green-100">
+                <div class="bg-[#f2fcf5] p-3 rounded-xl border border-green-100 mt-4">
                     <label class="block text-sm font-bold text-[#2d6a4f] mb-1">🎯 最終目標金額 (円)</label>
                     <input type="number" id="input-goal" class="w-full border-b-2 border-[#52b788] p-2 text-xl font-bold outline-none bg-transparent text-gray-700" value="20000000">
                 </div>
