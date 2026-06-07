@@ -1,75 +1,105 @@
-<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon.png">
     <title>冷凍弁当管理</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 pb-24">
-    <header class="bg-orange-500 text-white p-4 sticky top-0 z-10 shadow-md flex justify-between items-center">
-        <h1 class="text-xl font-bold">弁当マネージャー</h1>
+<body class="bg-[#f0f8ff] pb-24 text-gray-700"> <header class="bg-[#a2d2ff] text-white p-4 sticky top-0 z-10 shadow-sm flex justify-between items-center transition-colors">
+        <h1 id="header-title" class="text-xl font-bold tracking-wide">🍱 現在の在庫</h1>
         <div class="flex gap-3">
-            <button onclick="syncCloud()" id="sync-btn" class="text-xl">☁️</button>
-            <button onclick="showTab('settings')" class="text-xl">⚙️</button>
+            <button onclick="syncCloud()" id="sync-btn" class="text-xl drop-shadow-sm">☁️</button>
+            <button onclick="showTab('settings')" class="text-xl drop-shadow-sm">⚙️</button>
         </div>
     </header>
 
     <main class="p-4 max-w-md mx-auto">
         <section id="home" class="tab-content active space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-                <p class="text-gray-500 text-sm">現在の在庫合計</p>
-                <p id="total-count" class="text-5xl font-black text-orange-600">0</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-50 text-center">
+                <p class="text-gray-400 text-sm font-bold">現在の在庫合計</p>
+                <p id="total-count" class="text-5xl font-black text-[#a2d2ff] drop-shadow-sm mt-1">0</p>
             </div>
-            <div id="inventory-list" class="space-y-2"></div>
+            <div id="inventory-list" class="space-y-3"></div>
         </section>
 
         <section id="create" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold">新しく作る</h2>
+            <h2 class="text-lg font-bold text-gray-600">何を作りますか？</h2>
             <div id="recipe-selection" class="grid grid-cols-1 gap-3"></div>
-            <div id="cooking-panel" class="hidden bg-white p-4 rounded-xl border-2 border-orange-200 shadow-lg">
-                <h3 id="cooking-name" class="font-bold text-xl mb-2 text-orange-600"></h3>
-                <input type="number" id="make-count" value="4" class="w-full text-3xl p-2 border-b-2 border-orange-500 outline-none mb-4">
-                <button onclick="finishCooking()" class="w-full bg-orange-500 text-white py-4 rounded-xl font-bold shadow-lg">完成</button>
-                <button onclick="cancelCooking()" class="w-full text-gray-400 py-2 mt-2 text-sm text-center block">キャンセル</button>
+            <div id="cooking-panel" class="hidden bg-white p-5 rounded-2xl border-2 border-[#a2d2ff] shadow-lg text-center">
+                <div class="text-4xl mb-2" id="cooking-emoji">🍱</div>
+                <h3 id="cooking-name" class="font-bold text-xl mb-4 text-gray-700"></h3>
+                <p class="text-sm text-gray-400 mb-2">作る個数（タッパー数）</p>
+                <input type="number" id="make-count" value="4" class="w-24 text-center text-3xl p-2 border-b-2 border-[#a2d2ff] outline-none mb-6 text-gray-700 bg-transparent">
+                <button onclick="finishCooking()" class="w-full bg-[#a2d2ff] text-white py-3 rounded-xl font-bold shadow-md transition-transform">完成して在庫に追加！</button>
+                <button onclick="cancelCooking()" class="w-full text-gray-400 py-3 mt-1 text-sm font-bold">キャンセル</button>
             </div>
         </section>
 
         <section id="recipe-mgr" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold">レシピの管理</h2>
-            <div class="bg-white p-4 rounded-xl shadow border space-y-3">
-                <input type="text" id="new-recipe-name" class="w-full border p-2 rounded" placeholder="料理名">
-                <input type="text" id="new-recipe-ing" class="w-full border p-2 rounded" placeholder="材料目安">
-                <button onclick="addRecipe()" class="w-full bg-orange-500 text-white p-2 rounded font-bold">追加</button>
+            <h2 class="text-lg font-bold text-gray-600">新しいレシピの登録</h2>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-blue-50 space-y-3">
+                <div class="flex gap-2">
+                    <input type="text" id="new-recipe-emoji" class="w-16 border border-gray-200 p-2 rounded-xl text-center text-xl bg-gray-50" placeholder="絵文字" value="🍱">
+                    <input type="text" id="new-recipe-name" class="flex-1 border border-gray-200 p-2 rounded-xl bg-gray-50" placeholder="料理名 (例: 生姜焼き)">
+                </div>
+                <input type="text" id="new-recipe-ing" class="w-full border border-gray-200 p-2 rounded-xl text-sm bg-gray-50" placeholder="材料 (例: 豚肉200g, 玉ねぎ1個)">
+                <button onclick="addRecipe()" class="w-full bg-[#bde0fe] text-[#4a4e69] p-3 rounded-xl font-bold shadow-sm">レシピを追加する</button>
             </div>
+            <h2 class="text-lg font-bold text-gray-600 mt-6">登録済みレシピ</h2>
             <div id="recipe-edit-list" class="space-y-2"></div>
         </section>
 
+        <section id="shopping" class="tab-content space-y-4">
+            <h2 class="text-lg font-bold text-gray-600">お買い物リスト作成</h2>
+            <div id="shopping-list-container"></div>
+        </section>
+
         <section id="history" class="tab-content space-y-3">
-            <h2 class="text-lg font-bold">作成履歴</h2>
+            <h2 class="text-lg font-bold text-gray-600">最近作ったもの</h2>
             <div id="history-list" class="space-y-2"></div>
         </section>
 
         <section id="settings" class="tab-content space-y-6">
-            <h2 class="text-lg font-bold">設定</h2>
-            <div class="bg-white p-4 rounded-xl shadow border space-y-4 text-center">
-                <button onclick="downloadFile()" class="w-full bg-blue-500 text-white p-2 rounded text-sm">ファイル保存</button>
-                <input type="file" id="file-input" onchange="uploadFile(event)" class="text-xs w-full">
-                <hr>
-                <input type="text" id="gas-url" class="w-full border p-2 text-xs rounded" placeholder="GAS URL">
-                <button onclick="saveGasUrl()" class="w-full bg-green-600 text-white p-2 rounded text-sm">URL保存</button>
+            <h2 class="text-lg font-bold text-gray-600">データと設定</h2>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-blue-50 space-y-4 text-center">
+                <div class="space-y-2">
+                    <p class="text-sm font-bold text-gray-500">バックアップ</p>
+                    <button onclick="downloadFile()" class="w-full bg-blue-100 text-blue-700 py-2 rounded-xl text-sm font-bold">ファイルとして保存 (ダウンロード)</button>
+                    <div class="relative w-full">
+                        <button class="w-full bg-gray-100 text-gray-600 py-2 rounded-xl text-sm font-bold">ファイルから復元 (アップロード)</button>
+                        <input type="file" onchange="uploadFile(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    </div>
+                </div>
+                <hr class="border-gray-100">
+                <div class="space-y-2">
+                    <p class="text-sm font-bold text-gray-500">クラウド連携 (GAS)</p>
+                    <input type="text" id="gas-url" class="w-full border border-gray-200 p-2 text-xs rounded-xl bg-gray-50" placeholder="GAS URLを貼り付け">
+                    <button onclick="saveGasUrl()" class="w-full bg-green-100 text-green-700 py-2 rounded-xl text-sm font-bold">連携URLを保存</button>
+                </div>
             </div>
         </section>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-3 pb-8 shadow-2xl">
-        <button onclick="showTab('home')" class="flex flex-col items-center text-gray-400" id="nav-home">🏠</button>
-        <button onclick="showTab('create')" class="flex flex-col items-center text-gray-400" id="nav-create">🍳</button>
-        <button onclick="showTab('recipe-mgr')" class="flex flex-col items-center text-gray-400" id="nav-recipe-mgr">📖</button>
-        <button onclick="showTab('history')" class="flex flex-col items-center text-gray-400" id="nav-history">📜</button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t flex justify-around p-2 pb-8 shadow-2xl z-20">
+        <button onclick="showTab('home')" class="flex flex-col items-center text-gray-400 gap-1 w-1/5 transition-colors" id="nav-home">
+            <span class="text-2xl">🏠</span><span class="text-[10px] font-bold">在庫</span>
+        </button>
+        <button onclick="showTab('create')" class="flex flex-col items-center text-gray-400 gap-1 w-1/5 transition-colors" id="nav-create">
+            <span class="text-2xl">🍳</span><span class="text-[10px] font-bold">作る</span>
+        </button>
+        <button onclick="showTab('recipe-mgr')" class="flex flex-col items-center text-gray-400 gap-1 w-1/5 transition-colors" id="nav-recipe-mgr">
+            <span class="text-2xl">📖</span><span class="text-[10px] font-bold">レシピ</span>
+        </button>
+        <button onclick="showTab('shopping')" class="flex flex-col items-center text-gray-400 gap-1 w-1/5 transition-colors" id="nav-shopping">
+            <span class="text-2xl">🛒</span><span class="text-[10px] font-bold">買物</span>
+        </button>
+        <button onclick="showTab('history')" class="flex flex-col items-center text-gray-400 gap-1 w-1/5 transition-colors" id="nav-history">
+            <span class="text-2xl">📜</span><span class="text-[10px] font-bold">履歴</span>
+        </button>
     </nav>
     <script src="app.js"></script>
 </body>

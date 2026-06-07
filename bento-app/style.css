@@ -1,7 +1,27 @@
-/* File: style.css */
+/* タブの切り替えとフワッと表示するアニメーション */
 .tab-content { display: none; }
-.tab-content.active { display: block; }
+.tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* クラウド同期中の回転アニメーション */
 #sync-btn.loading { display: inline-block; animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-button:active { transform: scale(0.96); }
-nav button.active-nav { color: #f97316; font-weight: bold; }
+
+/* ボタンを押した時の反応 */
+button:active { transform: scale(0.95); transition: 0.1s; }
+
+/* 選択中のナビゲーションの色（パステルブルー） */
+nav button.active-nav { color: #a2d2ff; }
+nav button.active-nav span { filter: drop-shadow(0 2px 2px rgba(162, 210, 255, 0.4)); }
+
+/* カスタム通知（トースト）のアニメーション */
+.toast-anim { animation: toastInOut 2.5s ease-in-out forwards; }
+@keyframes toastInOut { 
+    0% { opacity: 0; transform: translate(-50%, -20px); } 
+    15% { opacity: 1; transform: translate(-50%, 0); } 
+    85% { opacity: 1; transform: translate(-50%, 0); } 
+    100% { opacity: 0; transform: translate(-50%, -20px); } 
+}
+
+/* お買い物リストの打ち消し線（パステルグレー化） */
+.strikethrough { text-decoration: line-through; opacity: 0.5; transform: scale(0.98); }
