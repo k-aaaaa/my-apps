@@ -10,7 +10,7 @@
     <!-- 演出用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body class="theme-stylish"> <!-- 初期設定はスタイリッシュテーマ -->
+<body class="theme-stylish">
 
     <!-- 🔑 起動時のお出迎え（スプラッシュ）画面 -->
     <div id="splash" class="fixed-splash">
@@ -21,12 +21,13 @@
         <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
-    <!-- 動く背景用のレイヤー -->
+    <!-- 背景用のレイヤー -->
     <div class="bg-layer" id="main-bg">
         <div class="glitter-shine"></div>
+        <div class="glitter-shine-overlay"></div>
     </div>
 
-    <!-- ヘッダー（合計節約金額をタップして手動微調整も可能） -->
+    <!-- ヘッダー -->
     <header class="header">
         <div class="header-main">
             <span class="header-label">💰 浮いたお弁当代</span>
@@ -43,7 +44,7 @@
         <!-- 🏠 1. ホーム画面（ストック一覧） -->
         <section id="view-home" class="view active">
             <div class="list-container" id="inventory-list">
-                <!-- ここに作ったお弁当が「食べた」ボタン付きで並びます -->
+                <!-- ここにお弁当カードが並びます -->
             </div>
         </section>
 
@@ -54,7 +55,7 @@
                 <!-- 登録したメニューがボタンになって並びます -->
             </div>
 
-            <!-- クッキング中パネル（何食分作ったか入力） -->
+            <!-- クッキング中パネル -->
             <div id="cooking-panel" class="panel hidden">
                 <div class="cooking-header">
                     <span id="cooking-emoji" class="text-4xl">🍱</span>
@@ -75,7 +76,7 @@
             </div>
         </section>
 
-        <!-- 📝 3. お買い物リスト・メニュー管理画面 -->
+        <!-- 🛒 3. お買い物リスト・メニュー管理画面 -->
         <section id="view-menu" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🛒 週末のお買い物リスト</h2>
@@ -104,7 +105,7 @@
             </div>
         </section>
 
-        <!-- 📜 4. 食べた履歴画面（ここにスマート取り消し✖を追加！） -->
+        <!-- 📜 4. 食べた履歴画面 -->
         <section id="view-history" class="view">
             <div class="panel">
                 <h2 class="panel-title">😋 最近食べたお弁当（最新10件）</h2>
@@ -114,7 +115,7 @@
             </div>
         </section>
 
-        <!-- 🛠️ 5. 詳細設定画面（着せ替え・お出迎え設定など） -->
+        <!-- 🛠️ 5. 詳細設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
@@ -124,6 +125,27 @@
                     <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン発光)</option>
                     <option value="theme-glitter">✨ マグネットグリッター (光動くラメツヤ)</option>
                 </select>
+            </div>
+
+            <!-- 🛠️ 今回追加の自由カラーカスタマイズパネル -->
+            <div class="panel" id="color-custom-panel">
+                <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
+                <p style="font-size: 11px; opacity:0.7; margin-bottom:12px; font-weight:bold;">このテーマのカラーを自分好みに変更できます</p>
+                <div class="color-picker-grid">
+                    <div class="color-picker-row">
+                        <label>背景の色</label>
+                        <input type="color" id="custom-color-bg" onchange="updateCustomColor('bg', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>文字の色</label>
+                        <input type="color" id="custom-color-text" onchange="updateCustomColor('text', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>ボタン・主役色</label>
+                        <input type="color" id="custom-color-primary" onchange="updateCustomColor('primary', this.value)">
+                    </div>
+                </div>
+                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期状態に戻す</button>
             </div>
 
             <div class="panel">
