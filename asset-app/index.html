@@ -5,150 +5,192 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="icon.png">
-    <title>資産形成管理</title>
+    <title>資産形成・複利管理</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body class="bg-[#f2fcf5] dark:bg-gray-900 pb-24 text-gray-700 dark:text-gray-200 transition-colors duration-300">
-    <div id="splash" class="fixed inset-0 bg-[#b7e4c7] dark:bg-emerald-950 z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div id="splash-default" class="text-center">
-            <div class="text-7xl mb-4 animate-bounce">💰</div>
-            <h1 class="text-[#2d6a4f] dark:text-emerald-300 text-2xl font-black tracking-widest drop-shadow-md">ASSET APP</h1>
+<body class="theme-stylish"> <div id="splash" class="fixed-splash">
+        <div id="splash-default" class="splash-content">
+            <div class="splash-logo">💰</div>
+            <h1 class="splash-title">ASSET APP</h1>
         </div>
-        <img id="splash-custom" class="hidden max-w-[80%] max-h-[70%] object-contain rounded-2xl shadow-2xl animate-fade-in" src="" alt="Welcome">
+        <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
-    <header class="bg-[#b7e4c7] dark:bg-emerald-900 text-[#2d6a4f] dark:text-emerald-100 p-4 sticky top-0 z-10 shadow-sm flex justify-between items-center">
-        <h1 id="header-title" class="text-xl font-bold tracking-wide">💰 ダッシュボード</h1>
-        <div class="flex gap-3">
-            <button onclick="triggerManualSync()" id="sync-btn" class="text-xl drop-shadow-sm active:scale-95 transition-transform">☁️</button>
-            <button onclick="showTab('settings')" class="text-xl drop-shadow-sm active:scale-95 transition-transform">⚙️</button>
+    <div class="bg-layer" id="main-bg">
+        <div class="glitter-shine"></div>
+    </div>
+
+    <header class="header">
+        <div class="header-title">💰 ASSET MANAGEMENT</div>
+        <div class="header-status">
+            <span class="currency-display" id="sync-indicator">スタンドアロンモード</span>
         </div>
     </header>
 
-    <main class="p-4 max-w-md mx-auto">
-        <section id="home" class="tab-content active space-y-4">
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700 text-center relative">
-                <p class="text-gray-400 text-sm font-bold mb-2">📍 現在の総資産額</p>
-                <p id="current-eval-display" class="text-4xl font-black text-[#2d6a4f] dark:text-emerald-400 drop-shadow-sm cursor-pointer blur-click" onclick="toggleBlur(this)">¥0</p>
-                <button onclick="updateEvalPrompt()" class="mt-4 w-full bg-[#eaf4f4] dark:bg-emerald-950 text-[#2d6a4f] dark:text-emerald-300 py-3 rounded-xl font-bold shadow-sm active:scale-95 transition-transform">
-                    📈 最新の資産額を更新する
+    <main class="main-container">
+
+        <section id="view-home" class="view active space-y">
+            <div class="asset-display-panel text-center">
+                <p class="asset-label">📍 現在のリアル総資産額</p>
+                <div id="current-eval-display" class="asset-value blur-click" onclick="toggleBlur(this)">¥0</div>
+                <p class="blur-hint-text">※数字をタップすると表示・非表示が切り替わります</p>
+                
+                <button onclick="updateEvalPrompt()" class="btn btn-primary w-full" style="margin-top: 20px;">
+                    📈 今月の最新資産額を更新する
                 </button>
             </div>
 
-            <div id="memo-display-panel" class="hidden bg-orange-50 dark:bg-amber-950/40 p-3 rounded-xl text-xs border border-orange-100 dark:border-amber-900 text-gray-500 dark:text-amber-200">
-                ✏️ <strong>最新のメモ:</strong> <span id="latest-memo-text"></span>
+            <div id="memo-display-panel" class="panel memo-panel hidden">
+                <div class="memo-title">✏️ 直近の資産更新メモ</div>
+                <p id="latest-memo-text" class="memo-content"></p>
             </div>
         </section>
 
-        <section id="simulator" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold text-gray-600 dark:text-gray-300">複利計算シミュレーター</h2>
-            
-            <div class="bg-[#2d6a4f] p-5 rounded-2xl shadow-md text-center text-white">
-                <p class="text-emerald-200 text-xs font-bold mb-1">設定年数後の予測資産額</p>
-                <p id="future-amount" class="text-3xl font-black drop-shadow-sm cursor-pointer blur-click" onclick="toggleBlur(this)">¥0</p>
-                <p class="text-[10px] text-emerald-300 mt-1">実質価値 (インフレ考慮): <span id="future-real-amount" class="font-bold">¥0</span></p>
+        <section id="view-simulator" class="view space-y">
+            <div class="simulator-hero-banner text-center">
+                <p class="sim-banner-label">目標年齢に達した時の予測資産額</p>
+                <div id="future-amount" class="sim-banner-value blur-click" onclick="toggleBlur(this)">¥0</div>
+                <p class="sim-banner-sub">実質価値 (インフレ考慮後): <strong id="future-real-amount">¥0</strong></p>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700">
-                <h3 class="font-bold text-gray-600 dark:text-gray-400 text-sm mb-4 text-center">資産推移グラフ（元本＋利益）</h3>
-                <div id="chart-container" class="flex items-end h-32 gap-1 mt-2"></div>
-                <div class="flex justify-between text-[10px] text-gray-400 mt-2"><span>現在</span><span>設定年後</span></div>
+            <div class="panel">
+                <h3 class="panel-title text-center">📈 将来の資産推移予測（複利効果）</h3>
+                <div id="chart-container" class="chart-flex-box">
+                    </div>
+                <div class="chart-labels">
+                    <span id="graph-label-current">現在</span>
+                    <span id="graph-label-target">目標年齢</span>
+                </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700 space-y-4">
-                <div class="flex gap-3">
+            <div class="panel space-y">
+                <h3 class="panel-title">⚙️ 条件を細かくシミュレーションする</h3>
+                
+                <div class="form-row">
                     <div class="flex-1">
-                        <label class="block text-sm font-bold text-gray-500 mb-1">毎月の積立額 (円)</label>
-                        <input type="number" id="input-monthly" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent">
-                    </div>
-                </div>
-                <div class="flex gap-3">
-                    <div class="flex-1">
-                        <label class="block text-sm font-bold text-gray-500 mb-1">想定利回り (%)</label>
-                        <input type="number" id="input-rate" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent" step="0.1">
+                        <label class="form-sub-label">現在の年齢 (才)</label>
+                        <input type="number" id="input-age-current" class="form-input" value="30">
                     </div>
                     <div class="flex-1">
-                        <label class="block text-sm font-bold text-gray-500 mb-1">インフレ率 (%)</label>
-                        <input type="number" id="input-inflation" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent" step="0.1">
+                        <label class="form-sub-label">目標の年齢 (才)</label>
+                        <input type="number" id="input-age-target" class="form-input" value="65">
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-500 mb-1">シミュレーション期間 (年)</label>
-                    <input type="number" id="input-years" class="w-full border-b-2 border-[#b7e4c7] p-2 text-xl font-bold outline-none bg-transparent">
+
+                <div class="form-group">
+                    <label class="form-sub-label font-gold">💡 すでにNISA等で運用中の現在の金額 (円)</label>
+                    <input type="number" id="input-initial" class="form-input" placeholder="例: 1500000">
                 </div>
-                <button onclick="saveSimulation()" class="w-full bg-[#52b788] text-white p-3 rounded-xl font-bold shadow-md mt-2">再計算する</button>
+
+                <div class="form-group">
+                    <label class="form-sub-label">これから毎月積み立てる金額 (円)</label>
+                    <input type="number" id="input-monthly" class="form-input" value="30000">
+                </div>
+
+                <div class="form-row">
+                    <div class="flex-1">
+                        <label class="form-sub-label">想定利回り (年%)</label>
+                        <input type="number" id="input-rate" class="form-input" value="5.0" step="0.1">
+                    </div>
+                    <div class="flex-1">
+                        <label class="form-sub-label">インフレ率 (%)</label>
+                        <input type="number" id="input-inflation" class="form-input" value="2.0" step="0.1">
+                    </div>
+                </div>
+
+                <button onclick="saveSimulationConditions()" class="btn btn-primary w-full" style="margin-top:10px;">📊 この条件で再計算する</button>
             </div>
         </section>
 
-        <section id="milestones" class="tab-content space-y-4">
-            <h2 class="text-lg font-bold text-gray-600 dark:text-gray-300">ご褒美スタンプカード</h2>
-            <p class="text-xs text-gray-500">評価額が目標に達したらご褒美！</p>
-            <div id="stamp-list" class="grid grid-cols-2 gap-3"></div>
+        <section id="view-milestones" class="view space-y">
+            <div class="panel-intro">
+                <h2 class="view-title">💮 ご褒美マイルストーン</h2>
+                <p class="view-sub">資産総額が目標を超えると自動でスタンプが押され、あらかじめ決めたご褒美が解放されます！</p>
+            </div>
+            <div id="stamp-list" class="grid-container">
+                </div>
         </section>
 
-        <section id="settings" class="tab-content space-y-6">
-            <h2 class="text-lg font-bold text-gray-600 dark:text-gray-300">アプリの詳細設定</h2>
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700 space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1">🔑 アプリ起動時のパスワード変更</label>
-                    <input type="password" id="settings-password" class="w-full border-b border-gray-200 dark:border-gray-600 p-2 text-sm bg-transparent font-bold text-gray-700 dark:text-gray-200 outline-none" placeholder="例：0000">
+        <section id="view-settings" class="view space-y">
+            <div class="panel">
+                <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
+                <select id="theme-selector" class="form-input" onchange="changeAppTheme(this.value)">
+                    <option value="theme-stylish">🤍 スタイリッシュ (すりガラス透明感)</option>
+                    <option value="theme-cute">🌸 ポップ＆キュート (パステルふんわり)</option>
+                    <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン発光)</option>
+                    <option value="theme-glitter">✨ マグネットグリッター (光動くラメツヤ)</option>
+                </select>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">🖼️ お出迎え画面・タイトル設定</h2>
+                <div class="form-group">
+                    <label>お出迎え画像を選ぶ</label>
+                    <input type="file" id="settings-welcome-img" accept="image/*" class="form-input file-input" onchange="saveWelcomeImage(event)">
                 </div>
-                <label class="flex items-center justify-between p-1">
-                    <span class="text-xs font-bold text-gray-400">🕵️ のぞき見防止フィルターを常時ON</span>
-                    <input type="checkbox" id="settings-peeping" class="w-5 h-5 accent-[#52b788]" onchange="applyPeepingFilter()">
-                </label>
-                <label class="flex items-center justify-between p-1">
-                    <span class="text-xs font-bold text-gray-400">☁️ 操作時に自動でバックアップ</span>
-                    <input type="checkbox" id="settings-auto-sync" class="w-5 h-5 accent-[#52b788]">
-                </label>
-                <div class="grid grid-cols-2 gap-3 items-end">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1">🖼️ お出迎え画像 (シナモン等)</label>
-                        <div class="relative bg-gray-100 dark:bg-gray-700 text-center py-2 rounded-xl text-xs font-bold text-gray-500 cursor-pointer overflow-hidden border border-dashed border-gray-300">
-                            <span>画像を選ぶ</span>
-                            <input type="file" onchange="saveWelcomeImage(event)" class="absolute inset-0 opacity-0 cursor-pointer">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1">⏱️ タイトル表示時間</label>
-                        <select id="settings-splash-time" class="w-full border-b border-gray-200 dark:border-gray-600 p-2 text-sm bg-transparent font-bold text-gray-700 dark:text-gray-200 outline-none">
-                            <option value="500">サクッと (0.5秒)</option>
-                            <option value="1200" selected>普通 (1.2秒)</option>
-                            <option value="2500">じっくり (2.5秒)</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label>表示時間</label>
+                    <select id="settings-splash-time" class="form-input" onchange="saveSplashTime(this.value)">
+                        <option value="500">サクッと (0.5秒)</option>
+                        <option value="1200" selected>普通 (1.2秒)</option>
+                        <option value="2500">じっくり (2.5秒)</option>
+                    </select>
                 </div>
                 <div id="welcome-img-preview-container" class="hidden text-center">
-                    <img id="welcome-img-preview" class="h-16 mx-auto rounded-lg shadow-sm" src="">
-                    <button onclick="clearWelcomeImage()" class="text-[10px] text-red-400 underline mt-1 block mx-auto">画像を消去</button>
+                    <img id="welcome-img-preview" class="img-preview" src="">
+                    <button onclick="clearWelcomeImage()" class="btn-text-danger">画像を消去する</button>
                 </div>
-                <hr class="border-gray-100 dark:border-gray-700">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-2">💮 ご褒美カスタマイズ</label>
-                    <div id="custom-rewards-list" class="space-y-2 max-h-48 overflow-y-auto p-1"></div>
-                </div>
-                <button onclick="saveAppSettings()" class="w-full bg-[#52b788] text-white py-2.5 rounded-xl text-sm font-bold shadow-md">設定を保存する</button>
             </div>
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700 space-y-4 text-center">
-                <div class="space-y-2">
-                    <p class="text-sm font-bold text-gray-400">クラウド連携 (GAS URL)</p>
-                    <input type="text" id="gas-url" class="w-full border border-gray-200 dark:border-gray-600 p-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200" placeholder="GAS URLを貼り付け">
-                    <button onclick="saveGasUrl()" class="w-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 py-2 rounded-xl text-xs font-bold">連携URLを保存</button>
+
+            <div class="panel">
+                <h2 class="panel-title">🕵️ のぞき見防止セキュリティ</h2>
+                <label class="flex-row-label">
+                    <input type="checkbox" id="settings-peeping" onchange="applyPeepingFilterToggle(this.checked)">
+                    <span>アプリ起動時は常に金額をモザイク表示にする</span>
+                </label>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">💮 ご褒美アイテムのカスタマイズ</h2>
+                <p class="form-sub-label" style="margin-bottom: 10px;">目標金額を達成した時のプレゼント内容を自由に書き換えて保存してね！</p>
+                <div id="custom-rewards-list" class="rewards-edit-container">
+                    </div>
+                <button onclick="saveCustomRewardsList()" class="btn btn-outline w-full" style="margin-top:12px;">🎁 ご褒美リストを保存する</button>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">🔑 パスワードの変更</h2>
+                <div class="form-group">
+                    <input type="password" id="settings-password" class="form-input" placeholder="新しい4桁の数字">
                 </div>
-                <hr class="border-gray-100 dark:border-gray-700">
-                <button onclick="resetData()" class="w-full bg-red-50 text-red-500 py-2 rounded-xl text-xs font-bold border border-red-100 dark:border-red-900 dark:bg-transparent">🗑️ 全データをリセット</button>
+                <button onclick="savePasswordOnly()" class="btn btn-outline w-full">パスワードを変更</button>
+            </div>
+
+            <div class="panel">
+                <h2 class="panel-title">☁️ クラウド同期・バックアップ (GAS)</h2>
+                <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのウェブアプリURLを貼り付け">
+                <div class="button-group" style="margin-top:10px;">
+                    <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
+                    <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動バックアップ</button>
+                </div>
+                <label class="flex-row-label">
+                    <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)"> 操作時に自動バックアップを行う
+                </label>
+                <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+                <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
             </div>
         </section>
+
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-t dark:border-gray-700 flex justify-around p-2 pb-8 shadow-2xl z-20">
-        <button onclick="showTab('home')" class="flex flex-col items-center text-gray-400 gap-1 w-1/4" id="nav-home"><span class="text-2xl">💰</span><span class="text-[10px] font-bold">ホーム</span></button>
-        <button onclick="showTab('simulator')" class="flex flex-col items-center text-gray-400 gap-1 w-1/4" id="nav-simulator"><span class="text-2xl">📊</span><span class="text-[10px] font-bold">計算機</span></button>
-        <button onclick="showTab('milestones')" class="flex flex-col items-center text-gray-400 gap-1 w-1/4" id="nav-milestones"><span class="text-2xl">💮</span><span class="text-[10px] font-bold">スタンプ</span></button>
-        <button onclick="showTab('settings')" class="flex flex-col items-center text-gray-400 gap-1 w-1/4" id="nav-settings"><span class="text-2xl">⚙️</span><span class="text-[10px] font-bold">設定</span></button>
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="view-home"><span class="icon">🏠</span><br><span class="label">ダッシュボード</span></button>
+        <button class="nav-btn" data-target="view-simulator"><span class="icon">📊</span><br><span class="label">計算機</span></button>
+        <button class="nav-btn" data-target="view-milestones"><span class="icon">💮</span><br><span class="label">スタンプ</span></button>
+        <button class="nav-btn" data-target="view-settings"><span class="icon">🛠️</span><br><span class="label">設定</span></button>
     </nav>
+
     <script src="app.js"></script>
 </body>
 </html>

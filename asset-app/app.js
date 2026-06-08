@@ -1,8 +1,10 @@
-// パスワード認証
+// ==========================================================================
+// 🔑 1. 4桁パスワード認証システム
+// ==========================================================================
 (function() {
     let savedPass = localStorage.getItem('asset_password');
     if (!savedPass) {
-        savedPass = prompt("【初回設定】\nこのアプリ専用のパスワードを半角数字で決めてください。\n(例: 0000 など自由な数字)");
+        savedPass = prompt("【初回設定】\n資産管理アプリ専用のパスワードを半角数字で決めてください。\n(例: 0000 など自由な数字)");
         if (savedPass) localStorage.setItem('asset_password', savedPass);
         else savedPass = "0000";
     }
@@ -19,13 +21,50 @@
 
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
-window.addEventListener('load', () => {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-    }
+// ==========================================================================
+// 💾 2. デフォルトのご褒美マイルストーン（スタンプ）設定
+// ==========================================================================
+const defaultStamps = [
+    { target: 0, reward: "資産形成スタート！偉い！" },
+    { target: 100000, reward: "プチアイスかちょっといいコンビニスイーツプチ贅沢" },
+    { target: 500000, reward: "スタバの新作をカスタム付きで贅沢に飲む" },
+    { target: 1000000, reward: "いつもより少し贅沢なランチを食べる" },
+    { target: 3000000, reward: "欲しかった服やアクセサリーを1つ買う" },
+    { target: 5000000, reward: "高級ホテルビュッフェかプチ温泉旅行へ行く" },
+    { target: 10000000, reward: "大台突破記念！最高級のディナーを堪能する" }
+];
+
+// ==========================================================================
+// 💾 3. グローバルデータ構造と初期化
+// ==========================================================================
+let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
+    evaluation: 0,       // 🏠 ホーム画面用：現在のリアルな総資産額
+    memo: "",            // 最新の一言メモ
+    ageCurrent: 30,      // 📊 計算機用：現在の年齢
+    ageTarget: 65,       // 📊 計算機用：目標の年齢
+    initialAmount: 0,    // 📊 計算機用：すでに運用中の初期投資額
+    monthly: 30000,      // 📊 計算機用：毎月の積立額
+    rate: 5.0,           // 📊 計算機用：想定利回り(%)
+    inflation: 2.0,      // 📊 計算機用：インフレ率(%)
+    appTheme: 'theme-stylish', // アプリのテーマ
+    peepingFilterActive: false, // 常時モザイクにするか
+    stamps: defaultStamps, // ご褒美カスタマイズ用
+    achievedTargets: [],  // すでにスタンプが押された目標金額リスト
+    autoSync: false,
+    splashTime: 1200
+};
+let GAS_URL = localStorage.getItem('asset_gas_url') || "";
+
+// アプリ起動時のイベント
+window.addEventListener('DOMContentLoaded', () => {
+    // テーマの即時適用
+    document.body.className = state.appTheme || 'theme-stylish';
+    const themeSel = document.getElementById('theme-selector');
+    if (themeSel) themeSel.value = state.appTheme || 'theme-stylish';
+
+    // お出迎えスプラッシュ画面の制御
     const imgData = localStorage.getItem('asset_welcome_img');
-    const splashTime = parseInt(localStorage.getItem('asset_splash_time')) || 1200;
-    
+    const splashTime = state.splashTime || 1200;
     if (imgData) {
         document.getElementById('splash-default').classList.add('hidden');
         const customImg = document.getElementById('splash-custom');
@@ -34,91 +73,130 @@ window.addEventListener('load', () => {
     }
     setTimeout(() => {
         const splash = document.getElementById('splash');
-        if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 500);
+        }
     }, splashTime);
+
+    // バックアップ用インジケーター表示
+    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロンモード";
+
+    render();
 });
 
-const defaultStamps = [
-    { target: 0, reward: "なし", text: "資産形成スタート！偉い！" },
-    { target: 300000, reward: "プチアイスやスタバ新作など", text: "30万円突破！" },
-    { target: 1000000, reward: "少し贅沢なランチ", text: "大台の100万円到達！" }
-];
-for(let i=2; i<=10; i++) {
-    defaultStamps.push({ target: i * 1000000, reward: "お好きなお菓子など", text: `${i}00万円到達！` });
-}
-
-let state = JSON.parse(localStorage.getItem('asset_data')) || {
-    principal: 0, evaluation: 0, monthly: 30000, investDay: 1, rate: 5, inflation: 2, years: 20, 
-    lastInvestMonth: "", peeping: false, autoSync: false, memo: "", stamps: defaultStamps, achievedList: []
-};
-let GAS_URL = localStorage.getItem('asset_gas_url') || "";
-
-function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed top-16 left-1/2 transform -translate-x-1/2 bg-[#d8f3dc] text-[#1b4332] dark:bg-emerald-900 dark:text-emerald-100 px-6 py-3 rounded-full shadow-lg font-bold text-sm z-50 whitespace-nowrap';
-    t.innerText = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
-}
-
 function saveLocal() {
-    localStorage.setItem('asset_data', JSON.stringify(state));
+    localStorage.setItem('asset_universe_data', JSON.stringify(state));
     render();
     if (state.autoSync) cloudSyncSilent();
 }
 
-function checkAutoInvest() {
-    const today = new Date();
-    const currentMonthStr = today.getFullYear() + "-" + (today.getMonth() + 1);
-    if (state.lastInvestMonth !== currentMonthStr && today.getDate() >= state.investDay) {
-        state.principal += state.monthly;
-        state.lastInvestMonth = currentMonthStr;
-        saveLocal();
-    }
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:12px; font-weight:bold; z-index:9999; letter-spacing:0.5px;';
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
 }
-checkAutoInvest();
 
-function showTab(tabId) {
+// ==========================================================================
+// 📱 4. タブメニュー切り替え
+// ==========================================================================
+document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        vibrate();
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(btn.dataset.target).classList.add('active');
+        btn.classList.add('active');
+    });
+});
+
+// ==========================================================================
+// 🕵️ 5. のぞき見防止フィルター（モザイクON/OFF）
+// ==========================================================================
+function toggleBlur(el) {
     vibrate();
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-nav'));
-    const navItem = document.getElementById('nav-' + tabId);
-    if (navItem) navItem.classList.add('active-nav');
+    el.classList.toggle('blurred-off');
 }
 
-function toggleBlur(el) { vibrate(); el.classList.toggle('blurred-off'); }
-function applyPeepingFilter() {
-    const isPeeping = document.getElementById('settings-peeping').checked;
+function applyPeepingFilterToggle(checked) {
+    state.peepingFilterActive = checked;
+    saveLocal();
+}
+
+function refreshPeepingBlurState() {
     document.querySelectorAll('.blur-click').forEach(el => {
-        if (isPeeping) el.classList.remove('blurred-off');
-        else el.classList.add('blurred-off');
+        if (state.peepingFilterActive) {
+            el.classList.remove('blurred-off'); // モザイクを強制ON
+        } else {
+            el.classList.add('blurred-off');    // モザイクを解除
+        }
     });
 }
 
+// ==========================================================================
+// 🏠 6. ダッシュボード：現在のリアル資産総額の更新（未来とは完全分離！）
+// ==========================================================================
 function updateEvalPrompt() {
     vibrate();
-    const val = prompt("現在の評価額（現在の資産残高）を入力してください", state.evaluation);
-    if(val !== null && !isNaN(val) && val !== "") {
-        const numVal = Number(val);
-        const txtMemo = prompt("今回の「一言メモ」があれば入力してください（空欄OK）\n例: 株価暴落、ボーナス月など");
+    const val = prompt("現在のリアルな総資産残高を入力してください（半角数字）:", state.evaluation || "");
+    if (val !== null && !isNaN(val) && val !== "") {
+        const numVal = parseInt(val);
+        const txtMemo = prompt("今回の更新に関する「一言メモ」があれば入力してください（空欄OK）\n例: ボーナス支給、株価下落、今月は節約頑張った など");
         
         state.evaluation = numVal;
-        if (state.principal === 0 || state.principal > state.evaluation) state.principal = state.evaluation;
-        if (txtMemo) state.memo = txtMemo;
+        state.memo = txtMemo || "";
+        
+        // ご褒美マイルストーンの自動達成判定
+        if (!state.achievedTargets) state.achievedTargets = [];
         
         state.stamps.forEach(s => {
-            if (state.evaluation >= s.target && !state.achievedList.includes(s.target)) {
-                state.achievedList.push(s.target);
+            if (state.evaluation >= s.target && !state.achievedTargets.includes(s.target)) {
+                state.achievedTargets.push(s.target);
+                // 達成時に華やかな演出とお知らせ
                 setTimeout(() => {
-                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-                    alert(`🎉 おめでとうございます！\n【${s.text}】を達成しました！\nご褒美：${s.reward}`);
-                }, 500);
+                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } });
+                    alert(`🎉 おめでとうございます！\n総資産が【${s.target === 0 ? "START" : s.target.toLocaleString() + "円"}】を突破しました！\n\n💮 解放されたご褒美：\n${s.reward}`);
+                }, 400);
             }
         });
+
         saveLocal();
-        showToast("📈 最新データを反映しました！");
+        showToast("📈 最新の資産総額を更新しました！");
     }
+}
+
+// ==========================================================================
+// 📊 7. 計算機：年齢ベース＆初期額対応の複利シミュレーション
+// ==========================================================================
+function saveSimulationConditions() {
+    vibrate();
+    state.ageCurrent = parseInt(document.getElementById('input-age-current').value) || 30;
+    state.ageTarget = parseInt(document.getElementById('input-age-target').value) || 65;
+    state.initialAmount = parseInt(document.getElementById('input-initial').value) || 0;
+    state.monthly = parseInt(document.getElementById('input-monthly').value) || 30000;
+    state.rate = parseFloat(document.getElementById('input-rate').value) || 5.0;
+    state.inflation = parseFloat(document.getElementById('input-inflation').value) || 2.0;
+    
+    if (state.ageCurrent >= state.ageTarget) {
+        alert("⚠️ 目標の年齢は、現在の年齢より高い歳を設定してください！");
+        state.ageTarget = state.ageCurrent + 1;
+    }
+
+    saveLocal();
+    showToast("📊 複利シミュレーションを再計算しました");
+}
+
+// ==========================================================================
+// 🎨 8. 着せ替え・お出迎え設定
+// ==========================================================================
+function changeAppTheme(themeName) {
+    vibrate();
+    state.appTheme = themeName;
+    document.body.className = themeName;
+    localStorage.setItem('asset_universe_data', JSON.stringify(state));
 }
 
 function saveWelcomeImage(e) {
@@ -144,50 +222,52 @@ function clearWelcomeImage() {
     showToast("画像を消去しました");
 }
 
-function saveSimulation() {
-    vibrate();
-    state.monthly = Number(document.getElementById('input-monthly').value);
-    state.rate = Number(document.getElementById('input-rate').value);
-    state.inflation = Number(document.getElementById('input-inflation').value);
-    state.years = Number(document.getElementById('input-years').value);
+function saveSplashTime(val) {
+    state.splashTime = parseInt(val);
     saveLocal();
-    showToast("📊 計算機を更新しました");
 }
 
-function saveAppSettings() {
-    vibrate();
-    const newPass = document.getElementById('settings-password').value;
-    if (newPass) {
-        localStorage.setItem('asset_password', newPass);
-        showToast("🔑 パスワードを更新しました");
+function savePasswordOnly() {
+    const p = document.getElementById('settings-password').value.trim();
+    if(p.length > 0) {
+        localStorage.setItem('asset_password', p);
+        showToast("🔑 パスワードを変更しました");
+        document.getElementById('settings-password').value = "";
     }
-    state.peeping = document.getElementById('settings-peeping').checked;
-    state.autoSync = document.getElementById('settings-auto-sync').checked;
-    
-    const splashTime = document.getElementById('settings-splash-time').value;
-    localStorage.setItem('asset_splash_time', splashTime);
+}
 
+// ご褒美アイテムのテキスト編集保存
+function saveCustomRewardsList() {
+    vibrate();
     state.stamps.forEach((s, idx) => {
         const inputEl = document.getElementById(`reward-input-${idx}`);
-        if (inputEl) s.reward = inputEl.value;
+        if (inputEl) s.reward = inputEl.value.trim() || "ご褒美未設定";
     });
-
     saveLocal();
-    showToast("⚙️ 設定を保存しました");
+    showToast("🎁 ご褒美のプレゼント内容を保存しました");
 }
 
+// ==========================================================================
+// ☁  9. GASバックアップ連携
+// ==========================================================================
 function saveGasUrl() {
-    GAS_URL = document.getElementById('gas-url').value;
+    GAS_URL = document.getElementById('gas-url').value.trim();
     localStorage.setItem('asset_gas_url', GAS_URL);
+    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロンモード";
     showToast("☁️ 連携URLを保存しました");
+}
+
+function toggleAutoSync(checked) {
+    state.autoSync = checked;
+    saveLocal();
 }
 
 function triggerManualSync() {
     vibrate();
-    if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを保存してください");
+    if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
     showToast("☁️ 同期中...");
     fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" })
-    .then(() => showToast("☁️ クラウドへ手動同期しました！"))
+    .then(() => showToast("☁️ 資産データを安全にバックアップしました！"))
     .catch(() => showToast("⚠️ 同期エラーが発生しました"));
 }
 
@@ -197,100 +277,145 @@ function cloudSyncSilent() {
 }
 
 function resetData() {
-    if(!confirm("本当に全てのデータを消去しますか？")) return;
+    if(!confirm("本当に全ての資産データをリセットしますか？設定したご褒美内容も初期化されます。")) return;
     localStorage.clear();
     location.reload();
 }
 
-function formatJPY(num) { return "¥" + num.toLocaleString('ja-JP'); }
-
+// ==========================================================================
+// 🖌️ 10. メイン画面・描画（レンダリング）および複利計算エンジン
+// ==========================================================================
 function render() {
-    document.getElementById('settings-peeping').checked = state.peeping || false;
-    document.getElementById('settings-auto-sync').checked = state.autoSync || false;
-    document.getElementById('gas-url').value = GAS_URL;
-
-    // ホーム画面：現在の資産だけを表示
-    document.getElementById('current-eval-display').innerText = formatJPY(state.evaluation || 0);
-
-    if (state.memo) {
-        document.getElementById('memo-display-panel').classList.remove('hidden');
+    // 🏠 A. ダッシュボード画面の描画
+    document.getElementById('current-eval-display').innerText = "¥" + (state.evaluation || 0).toLocaleString();
+    
+    const memoPanel = document.getElementById('memo-display-panel');
+    if (state.memo && state.memo.trim() !== "") {
+        memoPanel.classList.remove('hidden');
         document.getElementById('latest-memo-text').innerText = state.memo;
+    } else {
+        memoPanel.classList.add('hidden');
     }
 
+    // 📊 B. 複利シミュレーターの本格計算エンジン
+    const ageCurrent = state.ageCurrent || 30;
+    const ageTarget = state.ageTarget || 65;
+    const initialAmt = state.initialAmount || 0;
+    const monthlyAmt = state.monthly || 30000;
+    const rateYear = (state.rate !== undefined) ? state.rate : 5.0;
+    const inflationYear = (state.inflation !== undefined) ? state.inflation : 2.0;
+
+    // フォームへの現在値の同期
+    document.getElementById('input-age-current').value = ageCurrent;
+    document.getElementById('input-age-target').value = ageTarget;
+    document.getElementById('input-initial').value = initialAmt === 0 ? "" : initialAmt;
+    document.getElementById('input-monthly').value = monthlyAmt;
+    document.getElementById('input-rate').value = rateYear;
+    document.getElementById('input-inflation').value = inflationYear;
+
+    document.getElementById('graph-label-current').innerText = `${ageCurrent}才 (現在)`;
+    document.getElementById('graph-label-target').innerText = `${ageTarget}才 (目標)`;
+
+    // 計算年数の割り出し
+    let calculationYears = ageTarget - ageCurrent;
+    if (calculationYears < 1) calculationYears = 1;
+
+    let currentPrincipal = initialAmt; // 元本の追跡（初期運用額スタート！）
+    let currentEvaluation = initialAmt; // 複利評価額の追跡
+    const r = rateYear / 100; // 年利（小数）
+    
+    let yearlyHistoryData = []; // グラフ用の年ごとデータ配列
+
+    for (let i = 1; i <= calculationYears; i++) {
+        // 1年間分の積立を加算 (毎月積立額 × 12ヶ月)
+        const yearlyContribution = monthlyAmt * 12;
+        currentPrincipal += yearlyContribution;
+        
+        // 1年分の複利運用計算 (元あった額 ＋ 今年の積立額) に年利をかける
+        currentEvaluation = (currentEvaluation + yearlyContribution) * (1 + r);
+        
+        yearlyHistoryData.push({
+            yearIndex: i,
+            age: ageCurrent + i,
+            p: Math.round(currentPrincipal),
+            e: Math.round(currentEvaluation)
+        });
+    }
+
+    // 最終予測資産額の表示
+    const finalEvaluationResult = yearlyHistoryData.length > 0 ? yearlyHistoryData[yearlyHistoryData.length - 1].e : currentEvaluation;
+    document.getElementById('future-amount').innerText = "¥" + finalEvaluationResult.toLocaleString();
+    
+    // 物価上昇（インフレ）を考慮した実質価値の計算
+    const inflationCompoundFactor = Math.pow(1 + (inflationYear / 100), calculationYears);
+    const realValueResult = Math.round(finalEvaluationResult / inflationCompoundFactor);
+    document.getElementById('future-real-amount').innerText = "¥" + realValueResult.toLocaleString();
+
+    // 📊 C. 動的予測棒グラフの生成
+    const chartContainer = document.getElementById('chart-container');
+    chartContainer.innerHTML = '';
+    const maxEvaluationValue = Math.max(finalEvaluationResult, 1); // 高さの基準
+
+    yearlyHistoryData.forEach(d => {
+        const principalHeightPercent = (d.p / maxEvaluationValue) * 100;
+        const totalHeightPercent = (d.e / maxEvaluationValue) * 100;
+        const profitHeightPercent = Math.max(0, totalHeightPercent - principalHeightPercent);
+
+        // 各年齢ごとの縦棒
+        chartContainer.innerHTML += `
+            <div class="chart-bar-container" title="${d.age}才時点の予測\n総額: ¥${d.e.toLocaleString()}\n(うち元本: ¥${d.p.toLocaleString()})">
+                <div class="chart-bar-e" style="height: ${profitHeightPercent}%;"></div>
+                <div class="chart-bar-p" style="height: ${principalHeightPercent}%;"></div>
+            </div>
+        `;
+    });
+
+    // 💮 D. ご褒美スタンプカード（マイルストーン）の描画
+    const stampList = document.getElementById('stamp-list');
+    stampList.innerHTML = '';
+    
+    if (!state.achievedTargets) state.achievedTargets = [];
+
+    state.stamps.forEach(s => {
+        const isAchieved = state.evaluation >= s.target;
+        const masuClass = isAchieved ? 'panel stamp-card-masu achieved' : 'panel stamp-card-masu not-achieved';
+        const stampMarkHtml = isAchieved ? '<div class="achieved-stamp-mark">💮</div>' : '';
+        const targetLabelText = s.target === 0 ? "START" : `¥${(s.target).toLocaleString()}`;
+        
+        stampList.innerHTML += `
+            <div class="${masuClass}">
+                ${stampMarkHtml}
+                <div class="stamp-text-info">${s.target === 0 ? "初期登録" : "総資産目標"}</div>
+                <div class="stamp-target-val">${targetLabelText}</div>
+                <div class="stamp-reward-text">🎁 ${s.reward}</div>
+            </div>
+        `;
+    });
+
+    // 設定画面内のご褒美文字入力リストの生成
+    const rewardMgrList = document.getElementById('custom-rewards-list');
+    rewardMgrList.innerHTML = '';
+    state.stamps.forEach((s, idx) => {
+        const targetLabelText = s.target === 0 ? "START" : `${s.target / 10000}万円`;
+        rewardMgrList.innerHTML += `
+            <div class="reward-edit-row">
+                <span class="reward-edit-label">${targetLabelText}:</span>
+                <input type="text" id="reward-input-${idx}" class="form-input flex-1" style="padding:6px 10px; font-size:12px;" value="${s.reward}">
+            </div>
+        `;
+    });
+
+    // 設定画面インプット同期
+    document.getElementById('settings-peeping').checked = state.peepingFilterActive || false;
+    document.getElementById('gas-url').value = GAS_URL;
+    
     const imgData = localStorage.getItem('asset_welcome_img');
     if (imgData) {
         document.getElementById('welcome-img-preview').src = imgData;
         document.getElementById('welcome-img-preview-container').classList.remove('hidden');
     }
+    document.getElementById('settings-splash-time').value = state.splashTime || 1200;
 
-    // シミュレーター画面の入力値と計算
-    document.getElementById('input-monthly').value = state.monthly || 30000;
-    document.getElementById('input-rate').value = state.rate || 5;
-    document.getElementById('input-inflation').value = state.inflation || 2;
-    document.getElementById('input-years').value = state.years || 20;
-
-    let currentP = state.evaluation || 0; // 現在の資産額をスタート地点にする
-    let currentE = state.evaluation || 0;
-    const m = state.monthly || 30000;
-    const r = (state.rate || 5) / 100;
-    let graphData = [];
-
-    for(let i=1; i<=(state.years || 20); i++) {
-        currentP += (m * 12);
-        currentE = (currentE + (m * 12)) * (1 + r);
-        graphData.push({ p: Math.round(currentP), e: Math.round(currentE) });
-    }
-
-    const finalE = graphData.length > 0 ? graphData[graphData.length - 1].e : currentE;
-    document.getElementById('future-amount').innerText = formatJPY(finalE);
-    
-    const realValue = Math.round(finalE / Math.pow(1 + ((state.inflation || 2) / 100), (state.years || 20)));
-    document.getElementById('future-real-amount').innerText = formatJPY(realValue);
-
-    const chart = document.getElementById('chart-container');
-    chart.innerHTML = '';
-    const maxVal = Math.max(finalE, 1); 
-    
-    graphData.forEach((d, idx) => {
-        const pPercent = (d.p / maxVal) * 100;
-        const profitPercent = Math.max(0, ((d.e - d.p) / maxVal) * 100);
-        chart.innerHTML += `<div class="flex-1 flex flex-col justify-end" title="${idx+1}年後: ${formatJPY(d.e)}">
-            <div class="bg-[#74c69d] w-full opacity-90 rounded-t-sm" style="height: ${profitPercent}%;"></div>
-            <div class="bg-[#2d6a4f] w-full" style="height: ${pPercent}%;"></div>
-        </div>`;
-    });
-
-    // スタンプ
-    const stampList = document.getElementById('stamp-list');
-    stampList.innerHTML = '';
-    state.stamps.forEach(s => {
-        const isAchieved = state.evaluation >= s.target;
-        const opacity = isAchieved ? 'opacity-100' : 'opacity-40 grayscale';
-        const stampMark = isAchieved ? '<div class="absolute -top-3 -right-3 text-red-500 font-black text-4xl transform rotate-12 drop-shadow-md">💮</div>' : '';
-        const targetText = s.target === 0 ? "START" : `${(s.target / 10000).toLocaleString()}万円`;
-        
-        stampList.innerHTML += `
-            <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-green-50 dark:border-gray-700 relative ${opacity}">
-                ${stampMark}
-                <div class="text-[10px] text-gray-400 font-bold mb-1">${s.text}</div>
-                <div class="text-xl font-black text-[#2d6a4f] dark:text-emerald-400 mb-1">${targetText}</div>
-                <div class="text-xs font-bold text-orange-400 dark:text-amber-500">🎁 ${s.reward}</div>
-            </div>
-        `;
-    });
-
-    const rewardMgrList = document.getElementById('custom-rewards-list');
-    rewardMgrList.innerHTML = '';
-    state.stamps.forEach((s, idx) => {
-        const targetText = s.target === 0 ? "START" : `${(s.target / 10000).toLocaleString()}万`;
-        rewardMgrList.innerHTML += `
-            <div class="flex items-center gap-2 text-xs">
-                <span class="w-16 font-bold text-gray-400">${targetText}:</span>
-                <input type="text" id="reward-input-${idx}" class="flex-1 border-b border-gray-200 dark:border-gray-600 bg-transparent p-1 font-bold text-gray-700 dark:text-gray-200 outline-none" value="${s.reward}">
-            </div>
-        `;
-    });
-
-    applyPeepingFilter();
+    // のぞき見防止フィルターのモザイク更新
+    refreshPeepingBlurState();
 }
-render(); showTab('home');
