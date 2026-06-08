@@ -7,12 +7,10 @@
     <link rel="apple-touch-icon" href="icon.png">
     <title>お弁当在庫・節約管理</title>
     <link rel="stylesheet" href="style.css">
-    <!-- 演出用ライブラリ -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body class="theme-stylish">
 
-    <!-- 🔑 起動時のお出迎え（スプラッシュ）画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">🍱</div>
@@ -21,13 +19,11 @@
         <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
-    <!-- 背景用のレイヤー -->
     <div class="bg-layer" id="main-bg">
         <div class="glitter-shine"></div>
         <div class="glitter-shine-overlay"></div>
     </div>
 
-    <!-- ヘッダー -->
     <header class="header">
         <div class="header-main">
             <span class="header-label">💰 浮いたお弁当代</span>
@@ -38,24 +34,19 @@
         </div>
     </header>
 
-    <!-- メインコンテンツ -->
     <main class="main-container">
 
-        <!-- 🏠 1. ホーム画面（ストック一覧） -->
         <section id="view-home" class="view active">
+            <button onclick="spinRoulette()" class="btn btn-primary w-full" style="margin-bottom:15px; font-size: 15px;">🎲 今日どれ食べる？（ルーレット）</button>
+            
             <div class="list-container" id="inventory-list">
-                <!-- ここにお弁当カードが並びます -->
-            </div>
+                </div>
         </section>
 
-        <!-- 🍳 2. お弁当を作る画面 -->
         <section id="view-cook" class="view">
-            <!-- 料理選択モード -->
             <div id="recipe-selection" class="grid-container">
-                <!-- 登録したメニューがボタンになって並びます -->
-            </div>
+                </div>
 
-            <!-- クッキング中パネル -->
             <div id="cooking-panel" class="panel hidden">
                 <div class="cooking-header">
                     <span id="cooking-emoji" class="text-4xl">🍱</span>
@@ -76,7 +67,6 @@
             </div>
         </section>
 
-        <!-- 🛒 3. お買い物リスト・メニュー管理画面 -->
         <section id="view-menu" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🛒 週末のお買い物リスト</h2>
@@ -105,17 +95,14 @@
             </div>
         </section>
 
-        <!-- 📜 4. 食べた履歴画面 -->
         <section id="view-history" class="view">
             <div class="panel">
                 <h2 class="panel-title">😋 最近食べたお弁当（最新10件）</h2>
                 <div class="history-list" id="history-list">
-                    <!-- ここに履歴と、スマート取り消し用の✖ボタンが並びます -->
-                </div>
+                    </div>
             </div>
         </section>
 
-        <!-- 🛠️ 5. 詳細設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
@@ -129,7 +116,6 @@
 
             <div class="panel" id="color-custom-panel">
                 <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
-                <p style="font-size: 11px; opacity:0.7; margin-bottom:12px; font-weight:bold;">このテーマのカラーを自分好みに変更できます</p>
                 <div class="color-picker-grid">
                     <div class="color-picker-row">
                         <label>背景の色</label>
@@ -190,7 +176,7 @@
 
             <div class="panel">
                 <h2 class="panel-title">☁️ クラウド同期・バックアップ (GAS)</h2>
-                <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのウェブアプリURLを貼り付け">
+                <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのURLを貼り付け">
                 <div class="button-group" style="margin-top:10px;">
                     <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
                     <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動バックアップ</button>
@@ -198,14 +184,11 @@
                 <label class="flex-row-label">
                     <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)"> 操作時に自動バックアップを行う
                 </label>
-                <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
-                <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
             </div>
         </section>
 
     </main>
 
-    <!-- 📱 下部ナビゲーションメニュー -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-home"><span class="icon">🍱</span><br><span class="label">ストック</span></button>
         <button class="nav-btn" data-target="view-cook"><span class="icon">🍳</span><br><span class="label">作った</span></button>
