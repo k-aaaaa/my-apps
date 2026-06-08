@@ -1,4 +1,4 @@
-// パスワード認証（安全なプレースホルダー仕様）
+// パスワード認証
 (function() {
     let savedPass = localStorage.getItem('asset_password');
     if (!savedPass) {
@@ -19,7 +19,6 @@
 
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
-// お出迎え＆ダークモード設定
 window.addEventListener('load', () => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
@@ -39,7 +38,6 @@ window.addEventListener('load', () => {
     }, splashTime);
 });
 
-// カスタムご褒美の初期デフォルト値
 const defaultStamps = [
     { target: 0, reward: "なし", text: "資産形成スタート！偉い！" },
     { target: 300000, reward: "プチアイスやスタバ新作など", text: "30万円突破！" },
@@ -69,7 +67,6 @@ function saveLocal() {
     if (state.autoSync) cloudSyncSilent();
 }
 
-// 自動積立
 function checkAutoInvest() {
     const today = new Date();
     const currentMonthStr = today.getFullYear() + "-" + (today.getMonth() + 1);
@@ -77,7 +74,6 @@ function checkAutoInvest() {
         state.principal += state.monthly;
         state.lastInvestMonth = currentMonthStr;
         saveLocal();
-        showToast("✨ 今月の自動積立を元本に反映しました！");
     }
 }
 checkAutoInvest();
@@ -91,7 +87,6 @@ function showTab(tabId) {
     if (navItem) navItem.classList.add('active-nav');
 }
 
-// のぞき見防止フィルター制御
 function toggleBlur(el) { vibrate(); el.classList.toggle('blurred-off'); }
 function applyPeepingFilter() {
     const isPeeping = document.getElementById('settings-peeping').checked;
@@ -112,7 +107,6 @@ function updateEvalPrompt() {
         if (state.principal === 0 || state.principal > state.evaluation) state.principal = state.evaluation;
         if (txtMemo) state.memo = txtMemo;
         
-        // 🏅 ご褒美スタンプ達成時のド派手な紙吹雪演出
         state.stamps.forEach(s => {
             if (state.evaluation >= s.target && !state.achievedList.includes(s.target)) {
                 state.achievedList.push(s.target);
@@ -122,13 +116,11 @@ function updateEvalPrompt() {
                 }, 500);
             }
         });
-
         saveLocal();
         showToast("📈 最新データを反映しました！");
     }
 }
 
-// 画像保存と設定管理
 function saveWelcomeImage(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -155,10 +147,11 @@ function clearWelcomeImage() {
 function saveSimulation() {
     vibrate();
     state.monthly = Number(document.getElementById('input-monthly').value);
-    state.investDay = Number(document.getElementById('input-day').value);
+    state.rate = Number(document.getElementById('input-rate').value);
+    state.inflation = Number(document.getElementById('input-inflation').value);
+    state.years = Number(document.getElementById('input-years').value);
     saveLocal();
-    showToast("📊 積立設定を保存しました");
-    showTab('home');
+    showToast("📊 計算機を更新しました");
 }
 
 function saveAppSettings() {
@@ -174,7 +167,6 @@ function saveAppSettings() {
     const splashTime = document.getElementById('settings-splash-time').value;
     localStorage.setItem('asset_splash_time', splashTime);
 
-    // ご褒美のカスタマイズ値を読み取って保存
     state.stamps.forEach((s, idx) => {
         const inputEl = document.getElementById(`reward-input-${idx}`);
         if (inputEl) s.reward = inputEl.value;
@@ -217,6 +209,9 @@ function render() {
     document.getElementById('settings-auto-sync').checked = state.autoSync || false;
     document.getElementById('gas-url').value = GAS_URL;
 
+    // ホーム画面：現在の資産だけを表示
+    document.getElementById('current-eval-display').innerText = formatJPY(state.evaluation || 0);
+
     if (state.memo) {
         document.getElementById('memo-display-panel').classList.remove('hidden');
         document.getElementById('latest-memo-text').innerText = state.memo;
@@ -228,10 +223,15 @@ function render() {
         document.getElementById('welcome-img-preview-container').classList.remove('hidden');
     }
 
-    // 計算ロジック
-    let currentP = state.principal;
-    let currentE = state.evaluation;
-    const m = state.monthly;
+    // シミュレーター画面の入力値と計算
+    document.getElementById('input-monthly').value = state.monthly || 30000;
+    document.getElementById('input-rate').value = state.rate || 5;
+    document.getElementById('input-inflation').value = state.inflation || 2;
+    document.getElementById('input-years').value = state.years || 20;
+
+    let currentP = state.evaluation || 0; // 現在の資産額をスタート地点にする
+    let currentE = state.evaluation || 0;
+    const m = state.monthly || 30000;
     const r = (state.rate || 5) / 100;
     let graphData = [];
 
@@ -241,7 +241,7 @@ function render() {
         graphData.push({ p: Math.round(currentP), e: Math.round(currentE) });
     }
 
-    const finalE = graphData.length > 0 ? graphData[graphData.length - 1].e : state.evaluation;
+    const finalE = graphData.length > 0 ? graphData[graphData.length - 1].e : currentE;
     document.getElementById('future-amount').innerText = formatJPY(finalE);
     
     const realValue = Math.round(finalE / Math.pow(1 + ((state.inflation || 2) / 100), (state.years || 20)));
@@ -253,14 +253,14 @@ function render() {
     
     graphData.forEach((d, idx) => {
         const pPercent = (d.p / maxVal) * 100;
-        const profitPercent = ((d.e - d.p) / maxVal) * 100;
+        const profitPercent = Math.max(0, ((d.e - d.p) / maxVal) * 100);
         chart.innerHTML += `<div class="flex-1 flex flex-col justify-end" title="${idx+1}年後: ${formatJPY(d.e)}">
             <div class="bg-[#74c69d] w-full opacity-90 rounded-t-sm" style="height: ${profitPercent}%;"></div>
             <div class="bg-[#2d6a4f] w-full" style="height: ${pPercent}%;"></div>
         </div>`;
     });
 
-    // スタンプカード描画
+    // スタンプ
     const stampList = document.getElementById('stamp-list');
     stampList.innerHTML = '';
     state.stamps.forEach(s => {
@@ -279,7 +279,6 @@ function render() {
         `;
     });
 
-    // 設定画面内のご褒美カスタマイズ入力欄の描画
     const rewardMgrList = document.getElementById('custom-rewards-list');
     rewardMgrList.innerHTML = '';
     state.stamps.forEach((s, idx) => {
