@@ -9,7 +9,9 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body class="theme-stylish"> <div id="splash" class="fixed-splash">
+<body class="theme-stylish">
+
+    <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">💰</div>
             <h1 class="splash-title">ASSET APP</h1>
@@ -19,6 +21,7 @@
 
     <div class="bg-layer" id="main-bg">
         <div class="glitter-shine"></div>
+        <div class="glitter-shine-overlay"></div>
     </div>
 
     <header class="header">
@@ -123,6 +126,26 @@
                 </select>
             </div>
 
+            <div class="panel" id="color-custom-panel">
+                <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
+                <p style="font-size: 11px; opacity:0.7; margin-bottom:12px; font-weight:bold;">このテーマのカラーを自分好みに変更できます</p>
+                <div class="color-picker-grid">
+                    <div class="color-picker-row">
+                        <label>背景の色</label>
+                        <input type="color" id="custom-color-bg" onchange="updateCustomColor('bg', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>文字の色</label>
+                        <input type="color" id="custom-color-text" onchange="updateCustomColor('text', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>ボタン・主役色</label>
+                        <input type="color" id="custom-color-primary" onchange="updateCustomColor('primary', this.value)">
+                    </div>
+                </div>
+                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期状態に戻す</button>
+            </div>
+
             <div class="panel">
                 <h2 class="panel-title">🖼️ お出迎え画面・タイトル設定</h2>
                 <div class="form-group">
@@ -144,7 +167,7 @@
             </div>
 
             <div class="panel">
-                <h2 class="panel-title">🕵️ のぞき見防止セキュリティ</h2>
+                <h2 class="panel-title">🛠️ のぞき見防止セキュリティ</h2>
                 <label class="flex-row-label">
                     <input type="checkbox" id="settings-peeping" onchange="applyPeepingFilterToggle(this.checked)">
                     <span>アプリ起動時は常に金額をモザイク表示にする</span>
