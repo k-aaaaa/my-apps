@@ -2,7 +2,6 @@
 (function() {
     let savedPass = localStorage.getItem('bento_password');
     if (!savedPass) {
-        // 初期パスワードを強制せず、例を表示してユーザーに決めさせる
         savedPass = prompt("【初回設定】\nこのアプリ専用のパスワードを半角数字で決めてください。\n(例: 0000 など自由な数字)");
         if (savedPass) localStorage.setItem('bento_password', savedPass);
         else savedPass = "0000";
@@ -23,7 +22,6 @@ function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
 // お出迎え機能＆ダークモード設定
 window.addEventListener('load', () => {
-    // ダークモード連動
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
     }
@@ -73,16 +71,29 @@ function showTab(tabId) {
     if (navItem) navItem.classList.add('active-nav');
 }
 
-function adjustInventory(id, delta) {
+// 修正版：在庫調整関数（isEatenで「食べた」か「単なる修正」かを区別します）
+function adjustInventory(id, delta, isEaten = false) {
     vibrate();
     const item = state.inventory.find(i => i.id === id);
     if (!item) return;
+    
     item.count += delta;
-    if (delta < 0) {
+
+    if (isEaten) {
+        // 「食べた」ボタンが押された時だけ節約金額を増やす
         state.savedAmount = (state.savedAmount || 0) + (parseInt(state.saveUnit) || 600);
         showToast(`😋 食べました！(＋${state.saveUnit}円節約)`);
+    } else {
+        // 単なる数間違えの修正の時
+        if (delta > 0) showToast(`📦 在庫数を増やしました`);
+        else if (delta < 0) showToast(`📦 在庫数を減らしました`);
     }
-    if (item.count <= 0) state.inventory = state.inventory.filter(i => i.id !== id);
+
+    // 0個になったらリストから消す
+    if (item.count <= 0) {
+        state.inventory = state.inventory.filter(i => i.id !== id);
+    }
+    
     saveLocal();
 }
 
@@ -121,7 +132,6 @@ function finishCooking() {
     cancelCooking();
 }
 
-// レシピ・詳細設定まわり
 function saveAppSettings() {
     vibrate();
     const newPass = document.getElementById('settings-password').value;
@@ -219,7 +229,6 @@ function toggleIng(ing) {
     saveLocal();
 }
 
-// 📋 LINEにコピペ用コピー機能
 function copyShoppingListToClipboard() {
     vibrate();
     let text = "【お買い物リスト】\n";
@@ -307,13 +316,13 @@ function render() {
                 <div>
                     <div class="font-bold text-gray-700 dark:text-gray-200 text-sm">${item.name} ${badge}</div>
                     <div class="flex items-center gap-2 mt-1">
-                        <button onclick="adjustInventory(${item.id}, -1)" class="w-8 h-8 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-full font-bold">-</button>
+                        <button onclick="adjustInventory(${item.id}, -1, false)" class="w-8 h-8 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300 rounded-full font-bold">-</button>
                         <span class="font-bold w-4 text-center">${item.count}</span>
-                        <button onclick="adjustInventory(${item.id}, 1)" class="w-8 h-8 bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-300 rounded-full font-bold">+</button>
+                        <button onclick="adjustInventory(${item.id}, 1, false)" class="w-8 h-8 bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-300 rounded-full font-bold">+</button>
                     </div>
                 </div>
             </div>
-            <button onclick="adjustInventory(${item.id}, -1)" class="bg-[#a2d2ff] text-white px-5 py-3 rounded-xl font-bold shadow-sm">食べた</button>
+            <button onclick="adjustInventory(${item.id}, -1, true)" class="bg-[#a2d2ff] text-white px-5 py-3 rounded-xl font-bold shadow-sm">食べた</button>
         </div>`;
     });
     document.getElementById('total-count').innerText = total;
