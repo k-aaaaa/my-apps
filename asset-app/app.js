@@ -35,7 +35,7 @@ const defaultStamps = [
 ];
 
 // ==========================================================================
-// 💾 3. グローバルデータ構造と初期化 (カラーカスタム枠の追加)
+// 💾 3. グローバルデータ構造と初期化
 // ==========================================================================
 let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
     evaluation: 0,       
@@ -52,7 +52,7 @@ let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
     achievedTargets: [],  
     autoSync: false,
     splashTime: 1200,
-    // 🎨 テーマ別のカスタムカラー記憶枠
+    // 🎨 カスタムカラー
     customColors: {
         'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
         'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
@@ -63,7 +63,6 @@ let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
 let GAS_URL = localStorage.getItem('asset_gas_url') || "";
 
 window.addEventListener('DOMContentLoaded', () => {
-    // テーマとカスタムカラーの適用
     applyCurrentThemeAndColors();
 
     const imgData = localStorage.getItem('asset_welcome_img');
@@ -82,7 +81,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, splashTime);
 
-    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロンモード";
+    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン";
 
     render();
 });
@@ -102,7 +101,7 @@ function showToast(msg) {
 }
 
 // ==========================================================================
-// 🎨 カラーカスタマイズ制御エンジン
+// 🎨 4. カラーカスタマイズ制御エンジン
 // ==========================================================================
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
@@ -173,7 +172,7 @@ function resetCurrentThemeColors() {
     state.customColors[theme] = { ...defaults[theme] };
     applyCurrentThemeAndColors();
     saveLocal();
-    alert("テーマの色を初期状態に戻しました！");
+    showToast("テーマの色を初期化しました");
 }
 
 function changeAppTheme(themeName) {
@@ -184,7 +183,7 @@ function changeAppTheme(themeName) {
 }
 
 // ==========================================================================
-// 📱 3. タブメニュー切り替え
+// 📱 5. タブメニュー切り替え
 // ==========================================================================
 document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -198,7 +197,7 @@ document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
 });
 
 // ==========================================================================
-// 🕵️ 5. のぞき見防止フィルター
+// 🕵️ 6. のぞき見防止フィルター
 // ==========================================================================
 function toggleBlur(el) {
     vibrate();
@@ -221,7 +220,7 @@ function refreshPeepingBlurState() {
 }
 
 // ==========================================================================
-// 🏠 6. ダッシュボード：現在のリアル資産総額の更新
+// 🏠 7. ダッシュボード：現在のリアル資産総額の更新とスタンプ判定
 // ==========================================================================
 function updateEvalPrompt() {
     vibrate();
@@ -251,7 +250,7 @@ function updateEvalPrompt() {
 }
 
 // ==========================================================================
-// 📊 7. 計算機：年齢ベース＆初期額対応の複利シミュレーション
+// 📊 8. 計算機：年齢ベース＆初期額対応の複利シミュレーション
 // ==========================================================================
 function saveSimulationConditions() {
     vibrate();
@@ -272,7 +271,7 @@ function saveSimulationConditions() {
 }
 
 // ==========================================================================
-// 🖼️ 設定・管理ロジック
+// 🖼️ 9. 設定・管理ロジック
 // ==========================================================================
 function saveWelcomeImage(e) {
     const file = e.target.files[0];
@@ -322,12 +321,12 @@ function saveCustomRewardsList() {
 }
 
 // ==========================================================================
-// ☁  9. GASバックアップ連携
+// ☁  10. GASバックアップ連携
 // ==========================================================================
 function saveGasUrl() {
     GAS_URL = document.getElementById('gas-url').value.trim();
     localStorage.setItem('asset_gas_url', GAS_URL);
-    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロンモード";
+    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン";
     showToast("☁️ 連携URLを保存しました");
 }
 
@@ -341,7 +340,7 @@ function triggerManualSync() {
     if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
     showToast("☁️ 同期中...");
     fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" })
-    .then(() => showToast("☁️ 資産データを安全にバックアップしました！"))
+    .then(() => showToast("☁️ 資産データをバックアップしました！"))
     .catch(() => showToast("⚠️ 同期エラーが発生しました"));
 }
 
@@ -357,7 +356,7 @@ function resetData() {
 }
 
 // ==========================================================================
-// 🖌️ 10. メイン画面・描画（レンダリング）および複利計算エンジン
+// 🖌️ 11. メイン画面・描画（レンダリング）および複利計算エンジン
 // ==========================================================================
 function render() {
     document.getElementById('current-eval-display').innerText = "¥" + (state.evaluation || 0).toLocaleString();

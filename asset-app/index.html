@@ -21,13 +21,12 @@
 
     <div class="bg-layer" id="main-bg">
         <div class="glitter-shine"></div>
-        <div class="glitter-shine-overlay"></div>
     </div>
 
     <header class="header">
         <div class="header-title">💰 ASSET MANAGEMENT</div>
         <div class="header-status">
-            <span class="currency-display" id="sync-indicator">スタンドアロンモード</span>
+            <span class="currency-display" id="sync-indicator">スタンドアロン</span>
         </div>
     </header>
 
@@ -59,8 +58,7 @@
 
             <div class="panel">
                 <h3 class="panel-title text-center">📈 将来の資産推移予測（複利効果）</h3>
-                <div id="chart-container" class="chart-flex-box">
-                    </div>
+                <div id="chart-container" class="chart-flex-box"></div>
                 <div class="chart-labels">
                     <span id="graph-label-current">現在</span>
                     <span id="graph-label-target">目標年齢</span>
@@ -69,7 +67,6 @@
 
             <div class="panel space-y">
                 <h3 class="panel-title">⚙️ 条件を細かくシミュレーションする</h3>
-                
                 <div class="form-row">
                     <div class="flex-1">
                         <label class="form-sub-label">現在の年齢 (才)</label>
@@ -80,17 +77,14 @@
                         <input type="number" id="input-age-target" class="form-input" value="65">
                     </div>
                 </div>
-
                 <div class="form-group">
-                    <label class="form-sub-label font-gold">💡 すでにNISA等で運用中の現在の金額 (円)</label>
+                    <label class="form-sub-label">💡 すでにNISA等で運用中の金額 (円)</label>
                     <input type="number" id="input-initial" class="form-input" placeholder="例: 1500000">
                 </div>
-
                 <div class="form-group">
                     <label class="form-sub-label">これから毎月積み立てる金額 (円)</label>
                     <input type="number" id="input-monthly" class="form-input" value="30000">
                 </div>
-
                 <div class="form-row">
                     <div class="flex-1">
                         <label class="form-sub-label">想定利回り (年%)</label>
@@ -101,18 +95,16 @@
                         <input type="number" id="input-inflation" class="form-input" value="2.0" step="0.1">
                     </div>
                 </div>
-
                 <button onclick="saveSimulationConditions()" class="btn btn-primary w-full" style="margin-top:10px;">📊 この条件で再計算する</button>
             </div>
         </section>
 
         <section id="view-milestones" class="view space-y">
             <div class="panel-intro">
-                <h2 class="view-title">💮 ご褒美マイルストーン</h2>
-                <p class="view-sub">資産総額が目標を超えると自動でスタンプが押され、あらかじめ決めたご褒美が解放されます！</p>
+                <h2 class="panel-title">💮 ご褒美マイルストーン</h2>
+                <p style="font-size:12px; margin-bottom:15px; opacity:0.8;">資産総額が目標を超えると自動でスタンプが押され、ご褒美が解放されます！</p>
             </div>
-            <div id="stamp-list" class="grid-container">
-                </div>
+            <div id="stamp-list" class="grid-container"></div>
         </section>
 
         <section id="view-settings" class="view space-y">
@@ -128,7 +120,6 @@
 
             <div class="panel" id="color-custom-panel">
                 <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
-                <p style="font-size: 11px; opacity:0.7; margin-bottom:12px; font-weight:bold;">このテーマのカラーを自分好みに変更できます</p>
                 <div class="color-picker-grid">
                     <div class="color-picker-row">
                         <label>背景の色</label>
@@ -143,7 +134,7 @@
                         <input type="color" id="custom-color-primary" onchange="updateCustomColor('primary', this.value)">
                     </div>
                 </div>
-                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期状態に戻す</button>
+                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期化</button>
             </div>
 
             <div class="panel">
@@ -176,10 +167,8 @@
 
             <div class="panel">
                 <h2 class="panel-title">💮 ご褒美アイテムのカスタマイズ</h2>
-                <p class="form-sub-label" style="margin-bottom: 10px;">目標金額を達成した時のプレゼント内容を自由に書き換えて保存してね！</p>
-                <div id="custom-rewards-list" class="rewards-edit-container">
-                    </div>
-                <button onclick="saveCustomRewardsList()" class="btn btn-outline w-full" style="margin-top:12px;">🎁 ご褒美リストを保存する</button>
+                <div id="custom-rewards-list" class="rewards-edit-container"></div>
+                <button onclick="saveCustomRewardsList()" class="btn btn-outline w-full" style="margin-top:12px;">🎁 リストを保存する</button>
             </div>
 
             <div class="panel">
@@ -208,7 +197,7 @@
     </main>
 
     <nav class="bottom-nav">
-        <button class="nav-btn active" data-target="view-home"><span class="icon">🏠</span><br><span class="label">ダッシュボード</span></button>
+        <button class="nav-btn active" data-target="view-home"><span class="icon">🏠</span><br><span class="label">ホーム</span></button>
         <button class="nav-btn" data-target="view-simulator"><span class="icon">📊</span><br><span class="label">計算機</span></button>
         <button class="nav-btn" data-target="view-milestones"><span class="icon">💮</span><br><span class="label">スタンプ</span></button>
         <button class="nav-btn" data-target="view-settings"><span class="icon">🛠️</span><br><span class="label">設定</span></button>
