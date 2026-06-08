@@ -39,7 +39,6 @@ body {
 /* ==========================================================================
    🎨 各テーマのデザイン定義
    ========================================================================== */
-/* 🤍 スタイリッシュ */
 .theme-stylish { background: #f4f5f7; color: var(--stylish-text); }
 .theme-stylish .bg-layer { background: var(--stylish-bg); }
 .theme-stylish .panel, .theme-stylish .header, .theme-stylish .asset-display-panel, .theme-stylish .simulator-hero-banner { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); }
@@ -49,7 +48,6 @@ body {
 .theme-stylish .chart-bar-p { background: #2d6a4f; }
 .theme-stylish .chart-bar-e { background: #74c69d; }
 
-/* 🌸 キュート */
 .theme-cute { background: #fff5f5; color: var(--cute-text); }
 .theme-cute .bg-layer { background: var(--cute-bg); }
 .theme-cute .panel, .theme-cute .header, .theme-cute .asset-display-panel, .theme-cute .simulator-hero-banner { background: rgba(255, 255, 255, 0.85); border-radius: 24px !important; border: 3px solid #ffccd5; box-shadow: 0 6px 0 #ffb3c1; }
@@ -60,7 +58,6 @@ body {
 .theme-cute .chart-bar-p { background: #43b35d; border-radius: 8px 8px 0 0; }
 .theme-cute .chart-bar-e { background: #a2ffa2; border-radius: 8px 8px 0 0; }
 
-/* 🎮 ゲーミング */
 .theme-gaming { background: #07070c; color: var(--gaming-text); }
 .theme-gaming .bg-layer { background: var(--gaming-bg); background-image: radial-gradient(rgba(0,255,204,0.1) 1px, transparent 1px); background-size: 20px 20px; }
 .theme-gaming .panel, .theme-gaming .header, .theme-gaming .asset-display-panel, .theme-gaming .simulator-hero-banner { background: rgba(10, 10, 20, 0.8); border: 1px solid var(--gaming-text); box-shadow: 0 0 15px rgba(0,255,204,0.3); }
@@ -70,7 +67,6 @@ body {
 .theme-gaming .chart-bar-p { background: #ffaa00; }
 .theme-gaming .chart-bar-e { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
 
-/* ✨ マグネットグリッター（超軽量3D処理・キャッツアイ効果） */
 .theme-glitter { background: #060214; color: var(--glitter-text); }
 .theme-glitter .bg-layer { background: var(--glitter-bg); }
 .theme-glitter .glitter-shine {
@@ -142,13 +138,26 @@ body {
 .sim-banner-label { font-size: 11px; opacity: 0.6; font-weight: bold; margin: 0 0 4px 0; }
 .sim-banner-value { font-size: 28px; font-weight: 900; }
 .sim-banner-sub { font-size: 10px; opacity: 0.6; margin-top: 4px; }
+.fire-income-panel { margin-top: 15px; padding: 10px; border-radius: 12px; background: rgba(0,0,0,0.05); font-size: 12px; font-weight: bold; display: inline-block; }
+.theme-gaming .fire-income-panel, .theme-glitter .fire-income-panel { background: rgba(255,255,255,0.05); }
 
-.chart-flex-box { display: flex; align-items: flex-end; height: 130px; gap: 2px; margin-top: 15px; padding: 0 4px; }
-.chart-bar-container { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; transition: opacity 0.2s; }
+/* 積立ワンタッチボタン用 */
+.counter-input { display: flex; align-items: center; gap: 8px; }
+.btn-quick-adjust { width: 50px; height: 40px; border-radius: 10px; border: none; font-weight: 900; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; background: rgba(0,0,0,0.08); color: inherit; }
+.theme-gaming .btn-quick-adjust, .theme-glitter .btn-quick-adjust { background: rgba(255,255,255,0.1); }
+.btn-quick-adjust:active { transform: scale(0.9); }
+
+/* グラフ（エリア・棒切り替え対応） */
+.chart-flex-box { display: flex; align-items: flex-end; height: 130px; gap: 2px; margin-top: 5px; padding: 0 4px; }
+.chart-bar-container { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; transition: opacity 0.2s; position: relative; }
 .chart-bar-container:hover { opacity: 0.8; }
-.chart-bar-e { width: 100%; opacity: 0.95; border-radius: 1px 1px 0 0; }
-.chart-bar-p { width: 100%; }
+.chart-bar-e { width: 100%; opacity: 0.95; border-radius: 2px 2px 0 0; transition: all 0.3s ease; }
+.chart-bar-p { width: 100%; transition: all 0.3s ease; }
 .chart-labels { display: flex; justify-content: space-between; font-size: 10px; font-weight: bold; opacity: 0.4; margin-top: 8px; }
+
+/* グラフ：エリア（山）モード時のCSS */
+.chart-flex-box.mode-area { gap: 0; padding: 0; }
+.chart-flex-box.mode-area .chart-bar-e { border-radius: 0; }
 
 .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 20px; }
 .stamp-card-masu { padding: 16px; border-radius: 20px; position: relative; box-sizing: border-box; }
@@ -159,7 +168,7 @@ body {
 .stamp-reward-text { font-size: 11px; font-weight: bold; color: #ea580c; }
 .theme-gaming .stamp-reward-text, .theme-glitter .stamp-reward-text { color: #ffaa00; }
 
-.rewards-edit-container { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.rewards-edit-container { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .reward-edit-row { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; }
 .reward-edit-label { width: 65px; opacity: 0.5; }
 

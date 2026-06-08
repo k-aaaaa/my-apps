@@ -7,10 +7,12 @@
     <link rel="apple-touch-icon" href="icon.png">
     <title>資産形成・複利管理</title>
     <link rel="stylesheet" href="style.css">
+    <!-- ご褒美達成時の紙吹雪演出用 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body class="theme-stylish">
 
+    <!-- 🔑 起動時のお出迎え（スプラッシュ）画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">💰</div>
@@ -19,10 +21,13 @@
         <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
+    <!-- 背景用のレイヤー -->
     <div class="bg-layer" id="main-bg">
         <div class="glitter-shine"></div>
+        <div class="glitter-shine-overlay"></div>
     </div>
 
+    <!-- ヘッダー -->
     <header class="header">
         <div class="header-title">💰 ASSET MANAGEMENT</div>
         <div class="header-status">
@@ -30,8 +35,10 @@
         </div>
     </header>
 
+    <!-- メインコンテンツ -->
     <main class="main-container">
 
+        <!-- 🏠 1. ダッシュボード画面 -->
         <section id="view-home" class="view active space-y">
             <div class="asset-display-panel text-center">
                 <p class="asset-label">📍 現在のリアル総資産額</p>
@@ -49,15 +56,24 @@
             </div>
         </section>
 
+        <!-- 📊 2. シミュレーター画面 -->
         <section id="view-simulator" class="view space-y">
             <div class="simulator-hero-banner text-center">
                 <p class="sim-banner-label">目標年齢に達した時の予測資産額</p>
                 <div id="future-amount" class="sim-banner-value blur-click" onclick="toggleBlur(this)">¥0</div>
                 <p class="sim-banner-sub">実質価値 (インフレ考慮後): <strong id="future-real-amount">¥0</strong></p>
+                <!-- 遊び心：FIRE（不労所得）月額表示 -->
+                <div class="fire-income-panel">
+                    🏝️ 予測不労所得: 毎月 約 <strong id="fire-monthly-amount" style="font-size:16px;">0</strong> 万円
+                </div>
             </div>
 
             <div class="panel">
-                <h3 class="panel-title text-center">📈 将来の資産推移予測（複利効果）</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 class="panel-title" style="margin:0;">📈 将来の資産推移予測</h3>
+                    <button onclick="toggleGraphMode()" class="btn btn-outline" style="padding: 6px 12px; font-size: 10px;" id="btn-graph-toggle">🔄 モード切替</button>
+                </div>
+                <!-- グラフエリア -->
                 <div id="chart-container" class="chart-flex-box"></div>
                 <div class="chart-labels">
                     <span id="graph-label-current">現在</span>
@@ -70,43 +86,60 @@
                 <div class="form-row">
                     <div class="flex-1">
                         <label class="form-sub-label">現在の年齢 (才)</label>
-                        <input type="number" id="input-age-current" class="form-input" value="30">
+                        <input type="number" id="input-age-current" class="form-input" value="30" onchange="saveSimulationConditions()">
                     </div>
                     <div class="flex-1">
                         <label class="form-sub-label">目標の年齢 (才)</label>
-                        <input type="number" id="input-age-target" class="form-input" value="65">
+                        <input type="number" id="input-age-target" class="form-input" value="65" onchange="saveSimulationConditions()">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-sub-label">💡 すでにNISA等で運用中の金額 (円)</label>
-                    <input type="number" id="input-initial" class="form-input" placeholder="例: 1500000">
+                    <input type="number" id="input-initial" class="form-input" placeholder="例: 1500000" onchange="saveSimulationConditions()">
                 </div>
-                <div class="form-group">
-                    <label class="form-sub-label">これから毎月積み立てる金額 (円)</label>
-                    <input type="number" id="input-monthly" class="form-input" value="30000">
+                
+                <!-- 改善案：積立額のワンタッチボタン -->
+                <div class="form-group text-center">
+                    <label class="form-sub-label text-left">これから毎月積み立てる金額 (円)</label>
+                    <div class="counter-input" style="justify-content: space-between;">
+                        <button onclick="changeMonthly(-10000)" class="btn-quick-adjust">-1万</button>
+                        <input type="number" id="input-monthly" class="form-input text-center" value="30000" onchange="saveSimulationConditions()">
+                        <button onclick="changeMonthly(10000)" class="btn-quick-adjust">+1万</button>
+                    </div>
                 </div>
+
                 <div class="form-row">
                     <div class="flex-1">
                         <label class="form-sub-label">想定利回り (年%)</label>
-                        <input type="number" id="input-rate" class="form-input" value="5.0" step="0.1">
+                        <input type="number" id="input-rate" class="form-input" value="5.0" step="0.1" onchange="saveSimulationConditions()">
                     </div>
                     <div class="flex-1">
                         <label class="form-sub-label">インフレ率 (%)</label>
-                        <input type="number" id="input-inflation" class="form-input" value="2.0" step="0.1">
+                        <input type="number" id="input-inflation" class="form-input" value="2.0" step="0.1" onchange="saveSimulationConditions()">
                     </div>
                 </div>
-                <button onclick="saveSimulationConditions()" class="btn btn-primary w-full" style="margin-top:10px;">📊 この条件で再計算する</button>
             </div>
         </section>
 
-        <section id="view-milestones" class="view space-y">
+        <!-- 🎁 3. ご褒美（スタンプ）画面 -->
+        <section id="view-rewards" class="view space-y">
             <div class="panel-intro">
                 <h2 class="panel-title">💮 ご褒美マイルストーン</h2>
                 <p style="font-size:12px; margin-bottom:15px; opacity:0.8;">資産総額が目標を超えると自動でスタンプが押され、ご褒美が解放されます！</p>
             </div>
+            
+            <!-- スタンプカード一覧 -->
             <div id="stamp-list" class="grid-container"></div>
+
+            <!-- ご褒美の編集パネル（設定から独立） -->
+            <div class="panel" style="margin-top: 20px;">
+                <h2 class="panel-title">✏️ ご褒美アイテムのカスタマイズ</h2>
+                <div id="custom-rewards-list" class="rewards-edit-container"></div>
+                <button onclick="saveCustomRewardsList()" class="btn btn-outline w-full" style="margin-top:15px;">🎁 リストを保存する</button>
+            </div>
         </section>
 
+        <!-- 🛠️ 4. 詳細設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
@@ -166,12 +199,6 @@
             </div>
 
             <div class="panel">
-                <h2 class="panel-title">💮 ご褒美アイテムのカスタマイズ</h2>
-                <div id="custom-rewards-list" class="rewards-edit-container"></div>
-                <button onclick="saveCustomRewardsList()" class="btn btn-outline w-full" style="margin-top:12px;">🎁 リストを保存する</button>
-            </div>
-
-            <div class="panel">
                 <h2 class="panel-title">🔑 パスワードの変更</h2>
                 <div class="form-group">
                     <input type="password" id="settings-password" class="form-input" placeholder="新しい4桁の数字">
@@ -196,10 +223,12 @@
 
     </main>
 
+    <!-- 📱 下部ナビゲーション -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-home"><span class="icon">🏠</span><br><span class="label">ホーム</span></button>
         <button class="nav-btn" data-target="view-simulator"><span class="icon">📊</span><br><span class="label">計算機</span></button>
-        <button class="nav-btn" data-target="view-milestones"><span class="icon">💮</span><br><span class="label">スタンプ</span></button>
+        <!-- 変更：スタンプタブを「ご褒美」タブに変更 -->
+        <button class="nav-btn" data-target="view-rewards"><span class="icon">🎁</span><br><span class="label">ご褒美</span></button>
         <button class="nav-btn" data-target="view-settings"><span class="icon">🛠️</span><br><span class="label">設定</span></button>
     </nav>
 

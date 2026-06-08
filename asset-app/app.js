@@ -26,7 +26,7 @@ function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 // ==========================================================================
 const defaultStamps = [
     { target: 0, reward: "資産形成スタート！偉い！" },
-    { target: 100000, reward: "プチアイスかちょっといいコンビニスイーツプチ贅沢" },
+    { target: 100000, reward: "ちょっといいコンビニスイーツプチ贅沢" },
     { target: 500000, reward: "スタバの新作をカスタム付きで贅沢に飲む" },
     { target: 1000000, reward: "いつもより少し贅沢なランチを食べる" },
     { target: 3000000, reward: "欲しかった服やアクセサリーを1つ買う" },
@@ -52,7 +52,7 @@ let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
     achievedTargets: [],  
     autoSync: false,
     splashTime: 1200,
-    // 🎨 カスタムカラー
+    graphMode: 'milestone', // 'milestone' (5年ごと棒) または 'area' (なだらかな面)
     customColors: {
         'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
         'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
@@ -75,14 +75,10 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     setTimeout(() => {
         const splash = document.getElementById('splash');
-        if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(() => splash.remove(), 500);
-        }
+        if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
     }, splashTime);
 
     document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン";
-
     render();
 });
 
@@ -94,7 +90,7 @@ function saveLocal() {
 
 function showToast(msg) {
     const t = document.createElement('div');
-    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:12px; font-weight:bold; z-index:9999; letter-spacing:0.5px;';
+    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:12px; font-weight:bold; z-index:9999; letter-spacing:0.5px; pointer-events:none;';
     t.innerText = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2200);
@@ -106,19 +102,11 @@ function showToast(msg) {
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
     document.body.className = theme;
-
     const themeSel = document.getElementById('theme-selector');
     if (themeSel) themeSel.value = theme;
 
-    if (!state.customColors) {
-        state.customColors = {
-            'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
-            'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
-            'theme-gaming': { bg: '#050508', text: '#00ffcc', primary: '#00ffcc' },
-            'theme-glitter': { bg: '#03010a', text: '#ffffff', primary: '#8a2be2' }
-        };
-    }
-    if (!state.customColors[theme]) {
+    if (!state.customColors || !state.customColors[theme]) {
+        state.customColors = state.customColors || {};
         state.customColors[theme] = { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' };
     }
 
@@ -147,7 +135,6 @@ function applyCurrentThemeAndColors() {
     const pickerBg = document.getElementById('custom-color-bg');
     const pickerText = document.getElementById('custom-color-text');
     const pickerPrimary = document.getElementById('custom-color-primary');
-
     if (pickerBg) pickerBg.value = colors.bg.startsWith('#') ? colors.bg : '#cbd5e1';
     if (pickerText) pickerText.value = colors.text.startsWith('#') ? colors.text : '#1d1d1f';
     if (pickerPrimary) pickerPrimary.value = colors.primary.startsWith('#') ? colors.primary : '#1d1d1f';
@@ -190,7 +177,6 @@ document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
         vibrate();
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-        
         document.getElementById(btn.dataset.target).classList.add('active');
         btn.classList.add('active');
     });
@@ -211,11 +197,8 @@ function applyPeepingFilterToggle(checked) {
 
 function refreshPeepingBlurState() {
     document.querySelectorAll('.blur-click').forEach(el => {
-        if (state.peepingFilterActive) {
-            el.classList.remove('blurred-off'); 
-        } else {
-            el.classList.add('blurred-off');    
-        }
+        if (state.peepingFilterActive) el.classList.remove('blurred-off'); 
+        else el.classList.add('blurred-off');    
     });
 }
 
@@ -231,7 +214,6 @@ function updateEvalPrompt() {
         
         state.evaluation = numVal;
         state.memo = txtMemo || "";
-        
         if (!state.achievedTargets) state.achievedTargets = [];
         
         state.stamps.forEach(s => {
@@ -250,65 +232,55 @@ function updateEvalPrompt() {
 }
 
 // ==========================================================================
-// 📊 8. 計算機：年齢ベース＆初期額対応の複利シミュレーション
+// 📊 8. 計算機：ワンタッチ積立額変更＆グラフモード切替
 // ==========================================================================
-function saveSimulationConditions() {
+function changeMonthly(delta) {
     vibrate();
+    const input = document.getElementById('input-monthly');
+    let currentVal = parseInt(input.value) || 0;
+    currentVal = Math.max(0, currentVal + delta);
+    input.value = currentVal;
+    // 数値変更と同時にシミュレーションを即時再計算（グラフが動く）
+    saveSimulationConditions();
+}
+
+function toggleGraphMode() {
+    vibrate();
+    state.graphMode = state.graphMode === 'milestone' ? 'area' : 'milestone';
+    saveLocal();
+}
+
+function saveSimulationConditions() {
     state.ageCurrent = parseInt(document.getElementById('input-age-current').value) || 30;
     state.ageTarget = parseInt(document.getElementById('input-age-target').value) || 65;
     state.initialAmount = parseInt(document.getElementById('input-initial').value) || 0;
-    state.monthly = parseInt(document.getElementById('input-monthly').value) || 30000;
+    state.monthly = parseInt(document.getElementById('input-monthly').value) || 0;
     state.rate = parseFloat(document.getElementById('input-rate').value) || 5.0;
     state.inflation = parseFloat(document.getElementById('input-inflation').value) || 2.0;
     
     if (state.ageCurrent >= state.ageTarget) {
         alert("⚠️ 目標の年齢は、現在の年齢より高い歳を設定してください！");
         state.ageTarget = state.ageCurrent + 1;
+        document.getElementById('input-age-target').value = state.ageTarget;
     }
-
     saveLocal();
-    showToast("📊 複利シミュレーションを再計算しました");
 }
 
 // ==========================================================================
-// 🖼️ 9. 設定・管理ロジック
+// 🖼️ 9. 設定・ご褒美管理・GAS同期
 // ==========================================================================
 function saveWelcomeImage(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(event) {
-        try {
-            localStorage.setItem('asset_welcome_img', event.target.result);
-            document.getElementById('welcome-img-preview').src = event.target.result;
-            document.getElementById('welcome-img-preview-container').classList.remove('hidden');
-            showToast("🖼️ お出迎え画像を登録しました！");
-        } catch(err) {
-            alert("⚠️ 画像サイズが大きすぎます。小さめの画像を選んでください。");
-        }
+        try { localStorage.setItem('asset_welcome_img', event.target.result); document.getElementById('welcome-img-preview').src = event.target.result; document.getElementById('welcome-img-preview-container').classList.remove('hidden'); showToast("🖼️ お出迎え画像を登録しました！"); } 
+        catch(err) { alert("⚠️ 画像サイズが大きすぎます。小さめの画像を選んでください。"); }
     };
     reader.readAsDataURL(file);
 }
-
-function clearWelcomeImage() {
-    localStorage.removeItem('asset_welcome_img');
-    document.getElementById('welcome-img-preview-container').classList.add('hidden');
-    showToast("画像を消去しました");
-}
-
-function saveSplashTime(val) {
-    state.splashTime = parseInt(val);
-    saveLocal();
-}
-
-function savePasswordOnly() {
-    const p = document.getElementById('settings-password').value.trim();
-    if(p.length > 0) {
-        localStorage.setItem('asset_password', p);
-        showToast("🔑 パスワードを変更しました");
-        document.getElementById('settings-password').value = "";
-    }
-}
+function clearWelcomeImage() { localStorage.removeItem('asset_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("画像を消去しました"); }
+function saveSplashTime(val) { state.splashTime = parseInt(val); saveLocal(); }
+function savePasswordOnly() { const p = document.getElementById('settings-password').value.trim(); if(p.length > 0) { localStorage.setItem('asset_password', p); showToast("🔑 パスワードを変更しました"); document.getElementById('settings-password').value = ""; } }
 
 function saveCustomRewardsList() {
     vibrate();
@@ -320,59 +292,30 @@ function saveCustomRewardsList() {
     showToast("🎁 ご褒美のプレゼント内容を保存しました");
 }
 
-// ==========================================================================
-// ☁  10. GASバックアップ連携
-// ==========================================================================
-function saveGasUrl() {
-    GAS_URL = document.getElementById('gas-url').value.trim();
-    localStorage.setItem('asset_gas_url', GAS_URL);
-    document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン";
-    showToast("☁️ 連携URLを保存しました");
-}
-
-function toggleAutoSync(checked) {
-    state.autoSync = checked;
-    saveLocal();
-}
-
+function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('asset_gas_url', GAS_URL); document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン"; showToast("☁️ 連携URLを保存しました"); }
+function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
 function triggerManualSync() {
-    vibrate();
-    if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
-    showToast("☁️ 同期中...");
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" })
-    .then(() => showToast("☁️ 資産データをバックアップしました！"))
-    .catch(() => showToast("⚠️ 同期エラーが発生しました"));
+    vibrate(); if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }).then(() => showToast("☁️ 資産データをバックアップしました！")).catch(() => showToast("⚠️ 同期エラーが発生しました"));
 }
-
-function cloudSyncSilent() {
-    if (!GAS_URL) return;
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" });
-}
-
-function resetData() {
-    if(!confirm("本当に全ての資産データをリセットしますか？設定したご褒美内容も初期化されます。")) return;
-    localStorage.clear();
-    location.reload();
-}
+function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }); }
+function resetData() { if(!confirm("本当に全ての資産データをリセットしますか？ご褒美内容も初期化されます。")) return; localStorage.clear(); location.reload(); }
 
 // ==========================================================================
-// 🖌️ 11. メイン画面・描画（レンダリング）および複利計算エンジン
+// 🖌️ 10. メイン画面描画（複利エンジン・グラフ切替・FIRE月額計算）
 // ==========================================================================
 function render() {
     document.getElementById('current-eval-display').innerText = "¥" + (state.evaluation || 0).toLocaleString();
     
     const memoPanel = document.getElementById('memo-display-panel');
     if (state.memo && state.memo.trim() !== "") {
-        memoPanel.classList.remove('hidden');
-        document.getElementById('latest-memo-text').innerText = state.memo;
-    } else {
-        memoPanel.classList.add('hidden');
-    }
+        memoPanel.classList.remove('hidden'); document.getElementById('latest-memo-text').innerText = state.memo;
+    } else { memoPanel.classList.add('hidden'); }
 
     const ageCurrent = state.ageCurrent || 30;
     const ageTarget = state.ageTarget || 65;
     const initialAmt = state.initialAmount || 0;
-    const monthlyAmt = state.monthly || 30000;
+    const monthlyAmt = state.monthly || 0;
     const rateYear = (state.rate !== undefined) ? state.rate : 5.0;
     const inflationYear = (state.inflation !== undefined) ? state.inflation : 2.0;
 
@@ -382,9 +325,8 @@ function render() {
     document.getElementById('input-monthly').value = monthlyAmt;
     document.getElementById('input-rate').value = rateYear;
     document.getElementById('input-inflation').value = inflationYear;
-
-    document.getElementById('graph-label-current').innerText = `${ageCurrent}才 (現在)`;
-    document.getElementById('graph-label-target').innerText = `${ageTarget}才 (目標)`;
+    document.getElementById('graph-label-current').innerText = `${ageCurrent}才`;
+    document.getElementById('graph-label-target').innerText = `${ageTarget}才`;
 
     let calculationYears = ageTarget - ageCurrent;
     if (calculationYears < 1) calculationYears = 1;
@@ -392,20 +334,13 @@ function render() {
     let currentPrincipal = initialAmt; 
     let currentEvaluation = initialAmt; 
     const r = rateYear / 100; 
-    
     let yearlyHistoryData = []; 
 
     for (let i = 1; i <= calculationYears; i++) {
         const yearlyContribution = monthlyAmt * 12;
         currentPrincipal += yearlyContribution;
         currentEvaluation = (currentEvaluation + yearlyContribution) * (1 + r);
-        
-        yearlyHistoryData.push({
-            yearIndex: i,
-            age: ageCurrent + i,
-            p: Math.round(currentPrincipal),
-            e: Math.round(currentEvaluation)
-        });
+        yearlyHistoryData.push({ yearIndex: i, age: ageCurrent + i, p: Math.round(currentPrincipal), e: Math.round(currentEvaluation) });
     }
 
     const finalEvaluationResult = yearlyHistoryData.length > 0 ? yearlyHistoryData[yearlyHistoryData.length - 1].e : currentEvaluation;
@@ -415,17 +350,31 @@ function render() {
     const realValueResult = Math.round(finalEvaluationResult / inflationCompoundFactor);
     document.getElementById('future-real-amount').innerText = "¥" + realValueResult.toLocaleString();
 
+    // 遊び心：FIRE（不労所得）月額計算 (運用総額 × 年利 ÷ 12ヶ月 ÷ 1万円)
+    const fireMonthlyManYen = Math.floor((finalEvaluationResult * r) / 12 / 10000);
+    document.getElementById('fire-monthly-amount').innerText = fireMonthlyManYen.toLocaleString();
+
+    // グラフの描画（モード切り替え対応）
     const chartContainer = document.getElementById('chart-container');
     chartContainer.innerHTML = '';
     const maxEvaluationValue = Math.max(finalEvaluationResult, 1); 
+    
+    const isAreaMode = (state.graphMode === 'area');
+    chartContainer.className = isAreaMode ? 'chart-flex-box mode-area' : 'chart-flex-box';
 
-    yearlyHistoryData.forEach(d => {
+    let displayData = yearlyHistoryData;
+    if (!isAreaMode) {
+        // マイルストーン（棒）モード：5年ごと ＆ 最終年のみ抽出
+        displayData = yearlyHistoryData.filter(d => (d.age % 5 === 0) || d.age === ageTarget);
+    }
+
+    displayData.forEach(d => {
         const principalHeightPercent = (d.p / maxEvaluationValue) * 100;
         const totalHeightPercent = (d.e / maxEvaluationValue) * 100;
         const profitHeightPercent = Math.max(0, totalHeightPercent - principalHeightPercent);
 
         chartContainer.innerHTML += `
-            <div class="chart-bar-container" title="${d.age}才時点の予測\n総額: ¥${d.e.toLocaleString()}\n(うち元本: ¥${d.p.toLocaleString()})">
+            <div class="chart-bar-container" title="${d.age}才時点\n総額: ¥${d.e.toLocaleString()}\n(元本: ¥${d.p.toLocaleString()})">
                 <div class="chart-bar-e" style="height: ${profitHeightPercent}%;"></div>
                 <div class="chart-bar-p" style="height: ${principalHeightPercent}%;"></div>
             </div>
@@ -434,9 +383,7 @@ function render() {
 
     const stampList = document.getElementById('stamp-list');
     stampList.innerHTML = '';
-    
     if (!state.achievedTargets) state.achievedTargets = [];
-
     state.stamps.forEach(s => {
         const isAchieved = state.evaluation >= s.target;
         const masuClass = isAchieved ? 'panel stamp-card-masu achieved' : 'panel stamp-card-masu not-achieved';
