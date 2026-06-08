@@ -12,14 +12,16 @@ body {
     transition: color 0.3s ease;
 }
 
+/* 背景を彩るレイヤー */
 .bg-layer {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: -1;
+    z-index: -2; /* 他の要素の完全に裏側に配置 */
     transition: background 0.5s ease;
+    overflow: hidden;
 }
 
 .view {
@@ -53,6 +55,8 @@ body {
     padding: 20px;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
+    position: relative;
+    z-index: 10; /* 背景より手前に配置してボタン等のタップを邪魔させない */
 }
 
 /* ==========================================================================
@@ -110,21 +114,41 @@ body {
 .theme-gaming .chart-bar-p { background: #ffaa00; }
 .theme-gaming .chart-bar-e { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
 
-/* ✨ 4. マグネットグリッターテーマ (天の川満天の星空・絶対フリーズなし版) */
-.theme-glitter { background: #060214; color: #ffffff; }
+/* ✨ 4. マグネットグリッターテーマ (天の川満天の星空・超軽量ぬるぬるアニメ搭載版) */
+.theme-glitter { background: #050212; color: #ffffff; }
 .theme-glitter .bg-layer {
-    /* 深みのある宇宙グラデーションの上に、天の川のような星屑ラメをCSSで生成 */
-    background: 
-        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15) 1px, transparent 1px) 0 0 / 16px 16px,
-        radial-gradient(circle at 30% 80%, rgba(0,212,255,0.1) 2px, transparent 2px) 20px 30px / 32px 32px,
-        radial-gradient(circle at 80% 20%, rgba(138,43,226,0.15) 2px, transparent 2px) 10px 15px / 24px 24px,
-        linear-gradient(135deg, #0f0526 0%, #03010a 60%, #0c1a24 100%);
+    background: linear-gradient(135deg, #0e0524 0%, #030108 50%, #091520 100%);
+    z-index: -2;
 }
-/* タブが消える原因だった大きな動くレイヤー（.glitter-shine）のスタイルを完全に無効化 */
-.theme-glitter .glitter-shine { display: none !important; }
+
+/* 💅 負荷ほぼゼロで極上のきらめきと光のうねりを表現する特殊グリッターレイヤー */
+.theme-glitter .glitter-shine {
+    display: block !important;
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    /* 重ね合わせた3重の星屑グラデーション */
+    background-image: 
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.2) 1px, transparent 1px),
+        radial-gradient(circle at 70% 60%, rgba(0,220,255,0.15) 2px, transparent 2px),
+        radial-gradient(circle at 50% 50%, rgba(138,43,226,0.2) 3px, transparent 4px),
+        linear-gradient(45deg, transparent, rgba(255,255,255,0.05) 40%, rgba(0,220,255,0.08) 50%, transparent 60%);
+    background-size: 40px 40px, 60px 60px, 80px 80px, 100% 100%;
+    
+    /* 3Dアクセラレーションを強制し、スマホの脳みそを一切疲れさせない極意 */
+    transform: translate3d(0, 0, 0) rotate(-15deg);
+    will-change: transform;
+    animation: trueMagnetShimmer 20s ease-in-out infinite alternate;
+    z-index: -1;
+    pointer-events: none;
+}
+/* 天の川が静かに、奥深くうねるように光を反射するモーション */
+@keyframes trueMagnetShimmer {
+    0% { transform: translate3d(-5%, -5%, 0) rotate(-15deg) scale(0.95); filter: brightness(0.9); }
+    100% { transform: translate3d(5%, 5%, 0) rotate(-10deg) scale(1.05); filter: brightness(1.15); }
+}
 
 .theme-glitter .panel, .theme-glitter .header, .theme-glitter .dashboard-stats, .theme-glitter .modal-content, .theme-glitter .bento-card, .theme-glitter .asset-display-panel, .theme-glitter .simulator-hero-banner {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 12px 40px rgba(0,0,0,0.5);
@@ -175,7 +199,6 @@ body {
 .partner-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.15); background: #e2e8f0; cursor: pointer; }
 .speech-bubble { background: #ffffff; color: #333333; padding: 12px 20px; border-radius: 20px; display: inline-block; margin-top: 15px; font-weight: bold; font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); max-width: 80%; animation: bubbleFloat 3s ease-in-out infinite alternate; position: relative; cursor: pointer; }
 .speech-bubble::before { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); border-width: 0 8px 8px 8px; border-style: solid; border-color: transparent transparent #ffffff transparent; }
-@keyframes bubbleFloat { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 .dashboard-stats { display: flex; justify-content: space-around; padding: 15px 10px; border-radius: 16px; }
 .stat-box { text-align: center; flex: 1; }
 .stat-label { font-size: 10px; opacity: 0.6; margin-bottom: 4px; font-weight: bold; }
@@ -188,7 +211,6 @@ body {
 .card { width: 74px; height: 106px; border-radius: 10px; overflow: hidden; background: #222; animation: cardPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; position: relative; box-sizing: border-box; cursor: pointer; }
 .card img { width: 100%; height: 100%; object-fit: cover; }
 .card-rarity-tag { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.75); text-align: center; font-size: 9px; font-weight: 900; padding: 3px 0; }
-@keyframes cardPopIn { from { transform: scale(0.4) translateY(30px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 .SLR { border: 3px solid #ffffff; box-shadow: 0 0 20px #fff, inset 0 0 10px #fff; }
 .LR  { border: 3px solid #ff3333; box-shadow: 0 0 15px #ff3333; }
 .LE  { border: 2px solid #ff8c00; box-shadow: 0 0 10px #ff8c00; }
@@ -198,17 +220,13 @@ body {
 .R   { border: 2px solid #32cd32; }
 .N   { border: 1px solid rgba(255,255,255,0.4); }
 .C   { border: 1px solid #555; filter: grayscale(40%); }
-.blue-star-evolved { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background-image: radial-gradient(#00d4ff 1px, transparent 1px); background-size: 8px 8px; opacity: 0.65; mix-blend-mode: screen; box-shadow: inset 0 0 15px #00d4ff; }
 .btn-gacha { background: #e2e8f0; color: #333; padding: 16px; border-radius: 30px; font-size: 14px; font-weight: bold; width: 48%; }
 .btn-gacha-10 { background: linear-gradient(135deg, #ff00cc, #7b2ff7); color: white; padding: 16px; border-radius: 30px; font-size: 16px; font-weight: 900; box-shadow: 0 6px 20px rgba(255,0,204,0.3); width: 48%; }
 .gacha-controls { display: flex; justify-content: space-between; }
 .ticket-controls { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 10px; }
-.btn-ticket-trigger { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #222; padding: 12px 25px; border-radius: 25px; font-size: 13px; font-weight: 800; width: 90%; border: none; cursor: pointer; }
 .collection-header { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
 .collection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; padding-bottom: 30px; }
-.item-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.2); font-size: 10px; font-weight: bold; border: 1px dashed rgba(255,255,255,0.2); border-radius: 10px; min-height: 106px; }
 .btn-gold { background: linear-gradient(135deg, #ffd700, #ff8c00); color: black; font-weight: 900; width: 100%; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(255,215,0,0.4); border:none; cursor:pointer; }
-.locked-notice { background: rgba(255,68,68,0.1); border: 1px solid #ff4444; color: #ff4444; padding: 10px; border-radius: 8px; text-align: center; font-size: 12px; font-weight: bold; margin-top: 10px; }
 
 /* 🍱 お弁当固有パーツ */
 .bento-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 16px; box-sizing: border-box; margin-bottom: 10px; }
@@ -217,12 +235,8 @@ body {
 .bento-details { display: flex; flex-direction: column; justify-content: center; }
 .bento-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bento-name { font-weight: 800; font-size: 15px; }
-.badge-danger { background: linear-gradient(135deg, #ff4d4d, #ff1a1a); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; }
-.badge-warning { background: linear-gradient(135deg, #ffb84d, #ff9900); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; }
 .bento-qty-control { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.btn-circle { width: 28px; height: 28px; border-radius: 50%; border: none; font-weight: 900; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .qty-display { font-weight: 900; font-size: 15px; min-width: 20px; text-align: center; }
-.btn-eat { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; }
 .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 20px; }
 .grid-container button { padding: 20px 15px; border-radius: 16px; border: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; color: inherit; }
 .cooking-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 12px; }
@@ -232,17 +246,12 @@ body {
 .counter-input .form-input { width: 80px; font-size: 24px; }
 .shopping-item-row { display: flex; align-items: center; padding: 6px 0; font-weight: bold; font-size: 14px; }
 .shopping-checkbox { width: 18px; height: 18px; margin-right: 10px; }
-.ing-tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.ing-tag { padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
-.ing-tag.active { background: #e7f5ff; color: #1c7ed6; }
-.ing-tag.crossed { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.3); text-decoration: line-through; }
 .recipe-edit-list { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
 .recipe-edit-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.03); font-size: 13px; font-weight: bold; }
 .history-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-radius: 12px; background: rgba(0,0,0,0.02); margin-bottom: 8px; font-size: 13px; font-weight: bold; }
 .history-meta { font-size: 10px; opacity: 0.4; }
 .history-core { flex: 1; margin-left: 10px; display: flex; align-items: center; gap: 4px; }
 .history-amount { font-weight: 900; margin-right: 12px; }
-.btn-delete-history { background: transparent; border: none; color: #ff4444; font-size: 16px; font-weight: 900; cursor: pointer; padding: 4px 8px; }
 
 /* 💰 資産固有パーツ */
 .asset-display-panel { padding: 35px 20px; border-radius: 20px; text-align: center; }
