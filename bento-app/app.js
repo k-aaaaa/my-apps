@@ -25,29 +25,26 @@ function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 // 💾 2. グローバルデータ構造と初期化
 // ==========================================================================
 let state = JSON.parse(localStorage.getItem('bento_universe_data')) || {
-    inventory: [],      // お弁当ストック: [{ id, recipeId, name, emoji, count, timestamp }]
-    history: [],        // 食べた履歴: [{ id, date, name, emoji, count, snapshotRecipeId }]
-    recipes: [],        // 料理メニューマスター
-    shoppingCart: [],   // 買い物リストのチェック状態
-    crossedOut: [],     // 材料の打ち消し線状態
-    savedAmount: 0,     // 浮いたお弁当代
-    saveUnit: 600,      // 1食あたりの金額
-    alertDays: 14,      // 経過日数アラート
-    appTheme: 'theme-stylish', // 初期テーマ
+    inventory: [],      
+    history: [],        
+    recipes: [],        
+    shoppingCart: [],   
+    crossedOut: [],     
+    savedAmount: 0,     
+    saveUnit: 600,      
+    alertDays: 14,      
+    appTheme: 'theme-stylish', 
     autoSync: false,
     splashTime: 1200
 };
 let GAS_URL = localStorage.getItem('bento_gas_url') || "";
 let currentRecipe = null;
 
-// アプリ起動時のイベント
 window.addEventListener('DOMContentLoaded', () => {
-    // テーマの適用
     document.body.className = state.appTheme || 'theme-stylish';
     const themeSel = document.getElementById('theme-selector');
     if (themeSel) themeSel.value = state.appTheme || 'theme-stylish';
 
-    // お出迎えスプラッシュ画面の制御
     const imgData = localStorage.getItem('bento_welcome_img');
     const splashTime = state.splashTime || 1200;
     if (imgData) {
@@ -104,29 +101,25 @@ function adjustInventory(id, delta, isEaten = false) {
     if (!item) return;
     
     if (isEaten) {
-        // 😋 食べたボタン：在庫を1個減らし、お金を増やす、そして履歴に記録
-        item.count += delta; // deltaは-1が入る
+        item.count += delta; 
         state.savedAmount = (state.savedAmount || 0) + (parseInt(state.saveUnit) || 600);
         
-        // 食べた履歴に「どのお弁当(recipeId)」を食べたかも含めて保存（後で取り消すため）
         state.history.unshift({
             id: Date.now(),
             date: new Date().toLocaleDateString('ja-JP'),
             name: item.name,
             emoji: item.emoji,
             count: 1,
-            snapshotRecipeId: item.recipeId // ✖取り消し時に在庫を戻す目印
+            snapshotRecipeId: item.recipeId 
         });
         
         showToast(`😋 食べました！(＋${state.saveUnit}円)`);
         confetti({ particleCount: 30, spread: 40, origin: { y: 0.8 } });
     } else {
-        // 📦 純粋な数間違いの修正（＋ー）：お金は変動しない
         item.count += delta;
         showToast(`📦 ストック数を修正しました`);
     }
 
-    // 在庫が0個になったらストック一覧から消去
     if (item.count <= 0) {
         state.inventory = state.inventory.filter(i => i.id !== id);
     }
@@ -135,7 +128,7 @@ function adjustInventory(id, delta, isEaten = false) {
 }
 
 // ==========================================================================
-// ✖ 5. 【大注目】履歴のスマート取り消し（在庫自動復活＆金額マイナス）
+// ✖ 5. 履歴のスマート取り消し（在庫自動復活＆金額マイナス）
 // ==========================================================================
 function revokeEatenHistory(historyId) {
     vibrate();
@@ -143,38 +136,29 @@ function revokeEatenHistory(historyId) {
     if (!histItem) return;
 
     if (confirm(`🍱 食べた記録を取り消しますか？\n\n・節約金額から ${state.saveUnit}円 引かれます。\n・「${histItem.name}」のストック在庫が1食分自動で復活します。`)) {
-        
-        // 1. お金をマイナスする
         state.savedAmount = Math.max(0, (state.savedAmount || 0) - (parseInt(state.saveUnit) || 600));
 
-        // 2. ストック在庫へ自動で1食戻す
-        // 同じ料理(recipeId)のストックがまだ残っているか探す
         let stockItem = state.inventory.find(i => i.recipeId === histItem.snapshotRecipeId);
         
         if (stockItem) {
-            // すでにストックがある場合は数を＋1する
             stockItem.count += 1;
         } else {
-            // すでに食べきってストックから消えていた場合は、新しく枠を作って復活させる
             state.inventory.push({
                 id: Date.now(),
                 recipeId: histItem.snapshotRecipeId || Date.now(),
                 name: histItem.name,
                 emoji: histItem.emoji || "🍱",
                 count: 1,
-                timestamp: Date.now() // 新鮮な日付として復活
+                timestamp: Date.now() 
             });
         }
 
-        // 3. 履歴リストからこのお肉・お弁当データを消去
         state.history = state.history.filter(h => h.id !== historyId);
-
         saveLocal();
         showToast("✖ 食べる前の状態に巻き戻しました");
     }
 }
 
-// ヘッダー金額タップで最終微調整ができる機能（隠しバックアップ用）
 function editSavedAmountManual() {
     vibrate();
     const val = prompt("【節約金額の手動微調整】\n現在の合計金額を直接変更したい場合は数値を入力してください:", state.savedAmount);
@@ -186,11 +170,13 @@ function editSavedAmountManual() {
 }
 
 // ==========================================================================
-// 🍳 6. お弁当ストック作成（調理画面）
+// 🍳 6. お弁当ストック作成（調理画面：リセット機能搭載！）
 // ==========================================================================
 function startCooking(recipeId) {
     vibrate();
     currentRecipe = state.recipes.find(r => r.id === recipeId);
+    if (!currentRecipe) return; // メニューから消された料理は開かない安全策
+
     document.getElementById('recipe-selection').classList.add('hidden');
     document.getElementById('cooking-panel').classList.remove('hidden');
     document.getElementById('cooking-emoji').innerText = currentRecipe.emoji || "🍱";
@@ -204,20 +190,26 @@ function changeMakeCount(delta) {
     input.value = Math.max(1, parseInt(input.value) + delta);
 }
 
+// 選択状態を完全に初期化するリセット関数
 function cancelCooking() {
     vibrate();
+    currentRecipe = null; // 選択中のレシピ記憶を消去
     document.getElementById('recipe-selection').classList.remove('hidden');
     document.getElementById('cooking-panel').classList.add('hidden');
+    document.getElementById('cooking-emoji').innerText = "🍱";
+    document.getElementById('cooking-name').innerText = "";
+    document.getElementById('make-count').value = "4";
 }
 
 function finishCooking() {
     vibrate();
+    if (!currentRecipe) return;
+
     const count = parseInt(document.getElementById('make-count').value);
     if (!count || count <= 0) return;
     
     currentRecipe.lastCount = count;
     
-    // ストックに追加
     state.inventory.push({
         id: Date.now(),
         recipeId: currentRecipe.id,
@@ -227,12 +219,21 @@ function finishCooking() {
         timestamp: Date.now()
     });
     
-    saveLocal();
-    showToast(`✨ストックに ${currentRecipe.name} を ${count}食 追加！`);
+    // 【修正箇所】ここで追加完了したら、一旦選択をすべて解除（リセット）する
+    currentRecipe = null; 
     
-    // ホーム画面（一覧）に戻す
+    saveLocal();
+    showToast(`✨ストックを追加しました！`);
+    
+    // 画面の選択パネルを完全にまっさらに戻す
+    document.getElementById('recipe-selection').classList.remove('hidden');
+    document.getElementById('cooking-panel').classList.add('hidden');
+    document.getElementById('cooking-emoji').innerText = "🍱";
+    document.getElementById('cooking-name').innerText = "";
+    document.getElementById('make-count').value = "4";
+
+    // ストック一覧（ホーム）タブへ移動
     document.querySelector('.bottom-nav button[data-target="view-home"]').click();
-    cancelCooking();
 }
 
 // ==========================================================================
@@ -278,7 +279,14 @@ function cancelEditRecipe() {
 
 function deleteRecipe(id) {
     if (!confirm("このメニューを削除しますか？(ストックは消えません)")) return;
+    
+    // 【バグ修正】もし今調理中パネルを開いていたメニューが消されたら、強制的に選択リセットする
+    if (currentRecipe && currentRecipe.id === id) {
+        cancelCooking();
+    }
+    
     state.recipes = state.recipes.filter(r => r.id !== id);
+    state.shoppingCart = state.shoppingCart.filter(cartId => cartId !== id); // 買い物リストからも除外
     saveLocal();
 }
 
@@ -419,12 +427,10 @@ function resetData() {
 function render() {
     const now = Date.now();
     
-    // ヘッダー金額の同期＆タップイベント
     const savedMoneyEl = document.getElementById('saved-money');
     savedMoneyEl.innerText = "¥" + (state.savedAmount || 0).toLocaleString();
     savedMoneyEl.onclick = editSavedAmountManual;
 
-    // 1. ストック一覧（ホーム）の描画
     const invList = document.getElementById('inventory-list');
     invList.innerHTML = '';
     let totalStockCount = 0;
@@ -469,7 +475,6 @@ function render() {
     });
     document.getElementById('total-count').innerText = totalStockCount;
 
-    // 2. 「作った」選択用メニューボタンの描画
     const recList = document.getElementById('recipe-selection');
     recList.innerHTML = '';
     if(state.recipes.length === 0) {
@@ -484,7 +489,6 @@ function render() {
         `;
     });
 
-    // 3. メニュー管理・編集リストの描画
     const editList = document.getElementById('recipe-edit-list');
     editList.innerHTML = '';
     state.recipes.forEach(recipe => {
@@ -499,7 +503,6 @@ function render() {
         `;
     });
 
-    // 4. お買い物自動生成リストの描画
     const shopContainer = document.getElementById('shopping-list-container');
     let shopHtml = '<div class="space-y" style="display:flex; flex-direction:column; gap:6px;">';
     state.recipes.forEach(r => {
@@ -534,7 +537,6 @@ function render() {
     }
     shopContainer.innerHTML = shopHtml + '</div>';
 
-    // 5. 履歴リスト（✖スマート取り消しボタン連動）の描画
     const histList = document.getElementById('history-list');
     histList.innerHTML = '';
     
@@ -556,7 +558,6 @@ function render() {
         `;
     });
 
-    // 各フォームへの現在値の同期
     document.getElementById('settings-save-unit').value = state.saveUnit || 600;
     document.getElementById('settings-alert-days').value = state.alertDays || 14;
     document.getElementById('gas-url').value = GAS_URL;
