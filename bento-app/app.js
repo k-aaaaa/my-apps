@@ -1,29 +1,8 @@
 // ==========================================================================
-// 🔑 1. 4桁パスワード認証システム
+// 🚀 パスワード撤廃＆初期化
 // ==========================================================================
-(function() {
-    let savedPass = localStorage.getItem('bento_password');
-    if (!savedPass) {
-        savedPass = prompt("【初回設定】\nお弁当アプリ専用のパスワードを半角数字で決めてください。\n(例: 0000 など自由な数字)");
-        if (savedPass) localStorage.setItem('bento_password', savedPass);
-        else savedPass = "0000";
-    }
-    const authKey = "app_auth_bento";
-    if (sessionStorage.getItem(authKey) !== "true") {
-        if (prompt("パスワードを入力してください") === savedPass) {
-            sessionStorage.setItem(authKey, "true");
-        } else {
-            document.body.innerHTML = "<div style='padding:50px;text-align:center;'><h1>認証失敗</h1><button onclick='location.reload()'>再試行</button></div>";
-            throw new Error("Auth failed");
-        }
-    }
-})();
-
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
-// ==========================================================================
-// 💾 2. グローバルデータ構造と初期化
-// ==========================================================================
 let state = JSON.parse(localStorage.getItem('bento_universe_data')) || {
     inventory: [],      
     history: [],        
@@ -37,14 +16,13 @@ let state = JSON.parse(localStorage.getItem('bento_universe_data')) || {
     autoSync: false,
     splashTime: 1200,
     customColors: {
-        'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
-        'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
-        'theme-gaming': { bg: '#050508', text: '#00ffcc', primary: '#00ffcc' },
-        'theme-glitter': { bg: '#03010a', text: '#ffffff', primary: '#8a2be2' }
+        'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+        'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+        'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
     }
 };
 let GAS_URL = localStorage.getItem('bento_gas_url') || "";
-let currentRecipe = null; // 調理中のメニュー保持用
+let currentRecipe = null; 
 
 window.addEventListener('DOMContentLoaded', () => {
     applyCurrentThemeAndColors();
@@ -73,54 +51,55 @@ function saveLocal() {
 
 function showToast(msg) {
     const t = document.createElement('div');
-    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:10px 20px; border-radius:30px; font-size:12px; font-weight:bold; z-index:9999; letter-spacing:0.5px;';
+    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:12px; font-weight:bold; z-index:9999; letter-spacing:0.5px;';
     t.innerText = msg;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 2200);
 }
 
 // ==========================================================================
-// 🎨 3. カラーカスタマイズ制御エンジン
+// 🎨 カラーカスタマイズ制御エンジン（部位変更版）
 // ==========================================================================
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
-    document.body.className = theme;
     const themeSel = document.getElementById('theme-selector');
     if (themeSel) themeSel.value = theme;
 
-    if (!state.customColors || !state.customColors[theme]) {
-        state.customColors = state.customColors || {};
-        state.customColors[theme] = { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' };
+    if (!state.customColors[theme]) {
+        const defaults = {
+            'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+            'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+            'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
+        };
+        state.customColors[theme] = defaults[theme] || defaults['theme-stylish'];
     }
 
     const colors = state.customColors[theme];
     const root = document.documentElement;
 
-    if (theme === 'theme-stylish') {
-        root.style.setProperty('--stylish-bg', `radial-gradient(circle at 20% 20%, #ffffff 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--stylish-text', colors.text);
-        root.style.setProperty('--stylish-primary', colors.primary);
-    } else if (theme === 'theme-cute') {
-        root.style.setProperty('--cute-bg', `linear-gradient(135deg, #ffffff 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--cute-text', colors.text);
-        root.style.setProperty('--cute-primary', colors.primary);
-    } else if (theme === 'theme-gaming') {
-        root.style.setProperty('--gaming-bg', `radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--gaming-text', colors.text);
-        root.style.setProperty('--gaming-primary', colors.primary);
-    } else if (theme === 'theme-glitter') {
-        root.style.setProperty('--glitter-bg', `linear-gradient(135deg, #0e0524 0%, ${colors.bg} 60%, #000000 100%)`);
-        root.style.setProperty('--glitter-text', colors.text);
-        root.style.setProperty('--glitter-primary', colors.primary);
-        root.style.setProperty('--glitter-reflect', colors.primary + "66"); 
-    }
+    root.style.setProperty('--bg-color', colors.bg);
+    root.style.setProperty('--panel-bg', colors.panel);
+    root.style.setProperty('--accent-color', colors.accent);
+
+    const hexToLuma = (color) => {
+        const hex = color.replace('#', '');
+        if(hex.length !== 6) return 1;
+        const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+        return [0.299 * r, 0.587 * g, 0.114 * b].reduce((a, b) => a + b) / 255;
+    };
+    root.style.setProperty('--text-color', hexToLuma(colors.bg) > 0.5 ? '#1d1d1f' : '#ffffff');
+
+    const rgbaToHex = (rgba) => {
+        const match = rgba.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)/i);
+        return (match && match.length === 4) ? "#" + ("0" + parseInt(match[1],10).toString(16)).slice(-2) + ("0" + parseInt(match[2],10).toString(16)).slice(-2) + ("0" + parseInt(match[3],10).toString(16)).slice(-2) : rgba;
+    };
 
     const pickerBg = document.getElementById('custom-color-bg');
-    const pickerText = document.getElementById('custom-color-text');
-    const pickerPrimary = document.getElementById('custom-color-primary');
-    if (pickerBg) pickerBg.value = colors.bg.startsWith('#') ? colors.bg : '#cbd5e1';
-    if (pickerText) pickerText.value = colors.text.startsWith('#') ? colors.text : '#1d1d1f';
-    if (pickerPrimary) pickerPrimary.value = colors.primary.startsWith('#') ? colors.primary : '#1d1d1f';
+    const pickerPanel = document.getElementById('custom-color-panel');
+    const pickerAccent = document.getElementById('custom-color-accent');
+    if (pickerBg) pickerBg.value = rgbaToHex(colors.bg);
+    if (pickerPanel) pickerPanel.value = rgbaToHex(colors.panel);
+    if (pickerAccent) pickerAccent.value = rgbaToHex(colors.accent);
 }
 
 function updateCustomColor(type, value) {
@@ -134,10 +113,9 @@ function resetCurrentThemeColors() {
     vibrate();
     const theme = state.appTheme || 'theme-stylish';
     const defaults = {
-        'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
-        'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
-        'theme-gaming': { bg: '#050508', text: '#00ffcc', primary: '#00ffcc' },
-        'theme-glitter': { bg: '#03010a', text: '#ffffff', primary: '#8a2be2' }
+        'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+        'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+        'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
     };
     state.customColors[theme] = { ...defaults[theme] };
     applyCurrentThemeAndColors();
@@ -153,7 +131,7 @@ function changeAppTheme(themeName) {
 }
 
 // ==========================================================================
-// 📱 4. タブメニュー切り替え
+// 📱 タブメニュー切り替え
 // ==========================================================================
 document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -166,7 +144,7 @@ document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
 });
 
 // ==========================================================================
-// 🎲 遊び心：今日のお弁当ルーレット
+// 🎲 今日のお弁当ルーレット
 // ==========================================================================
 function spinRoulette() {
     vibrate();
@@ -176,7 +154,6 @@ function spinRoulette() {
     const randomIndex = Math.floor(Math.random() * state.inventory.length);
     const picked = state.inventory[randomIndex];
     
-    // 紙吹雪を少しだけ散らしてルーレット感を出す
     confetti({ particleCount: 50, spread: 40, origin: { y: 0.6 } });
     
     setTimeout(() => {
@@ -185,7 +162,7 @@ function spinRoulette() {
 }
 
 // ==========================================================================
-// 📦 5. 在庫の修正とお金 ＆ 食べたボタン（履歴エコ仕様）
+// 📦 在庫の修正・お金・履歴システム（エコ仕様）
 // ==========================================================================
 function adjustInventory(id, delta, isEaten = false) {
     vibrate();
@@ -205,7 +182,7 @@ function adjustInventory(id, delta, isEaten = false) {
             snapshotRecipeId: item.recipeId 
         });
         
-        // 【エコ仕様】履歴が30件を超えたら古いものを自動削除
+        // 【エコ仕様】履歴が30件を超えたら古いものを自動でサクッと削除
         if (state.history.length > 30) {
             state.history = state.history.slice(0, 30);
         }
@@ -242,6 +219,7 @@ function revokeEatenHistory(historyId) {
             });
         }
 
+        // ここで履歴配列から消すため、自動削除（slice）されたデータが勝手に復活することはありません。
         state.history = state.history.filter(h => h.id !== historyId);
         saveLocal();
         showToast("✖ 食べる前の状態に巻き戻しました");
@@ -257,7 +235,7 @@ function editSavedAmountManual() {
 }
 
 // ==========================================================================
-// 🍳 6. お弁当ストック作成（追加後リセット機能）
+// 🍳 お弁当ストック作成
 // ==========================================================================
 function startCooking(recipeId) {
     vibrate();
@@ -297,7 +275,6 @@ function finishCooking() {
         emoji: currentRecipe.emoji, count: count, timestamp: Date.now()
     });
     
-    // 【仕様変更】ストック追加後は必ず選択状態を初期化（リセット）して閉じる
     currentRecipe = null; 
     document.getElementById('recipe-selection').classList.remove('hidden');
     document.getElementById('cooking-panel').classList.add('hidden');
@@ -310,7 +287,7 @@ function finishCooking() {
 }
 
 // ==========================================================================
-// 🛒 7. メニュー管理・お買い物リスト（削除時のパネル追従修正）
+// 🛒 メニュー管理・お買い物リスト
 // ==========================================================================
 function saveRecipe() {
     vibrate();
@@ -346,11 +323,7 @@ function cancelEditRecipe() {
 
 function deleteRecipe(id) {
     if (!confirm("このメニューを削除しますか？(ストックは消えません)")) return;
-    
-    // 【バグ修正】もし今このメニューを作っている最中（パネルが開いている）なら、パネルを閉じる
-    if (currentRecipe && currentRecipe.id === id) {
-        cancelCooking();
-    }
+    if (currentRecipe && currentRecipe.id === id) cancelCooking(); // 調理中の誤作動防止
     
     state.recipes = state.recipes.filter(r => r.id !== id);
     state.shoppingCart = state.shoppingCart.filter(cartId => cartId !== id); 
@@ -388,7 +361,7 @@ function copyShoppingListToClipboard() {
 }
 
 // ==========================================================================
-// 🖼️ 8. 設定管理・GAS同期
+// 🖼️ 設定管理・GAS同期
 // ==========================================================================
 function saveWelcomeImage(e) {
     const file = e.target.files[0]; if (!file) return;
@@ -402,7 +375,6 @@ function saveWelcomeImage(e) {
 function clearWelcomeImage() { localStorage.removeItem('bento_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("画像を消去しました"); }
 function saveSplashTime(val) { state.splashTime = parseInt(val); saveLocal(); }
 function saveAppSettings() { vibrate(); state.saveUnit = parseInt(document.getElementById('settings-save-unit').value) || 600; state.alertDays = parseInt(document.getElementById('settings-alert-days').value) || 14; saveLocal(); showToast("⚙️ 設定を保存しました"); }
-function savePasswordOnly() { const p = document.getElementById('settings-password').value.trim(); if(p.length > 0) { localStorage.setItem('bento_password', p); showToast("🔑 パスワードを変更しました"); document.getElementById('settings-password').value = ""; } }
 
 function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('bento_gas_url', GAS_URL); showToast("☁️ 連携URLを保存しました"); }
 function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
@@ -414,7 +386,7 @@ function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body:
 function resetData() { if(!confirm("本当に全てのデータを初期化しますか？")) return; localStorage.clear(); location.reload(); }
 
 // ==========================================================================
-// 🖌️ 9. メイン画面・描画（レンダリング）ロジック
+// 🖌️ メイン画面・描画ロジック
 // ==========================================================================
 function render() {
     const now = Date.now();
@@ -464,7 +436,7 @@ function render() {
     recList.innerHTML = '';
     if(state.recipes.length === 0) recList.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; opacity:0.5; font-weight:bold; font-size:13px;">「メニュー」タブから料理を登録してください✏️</div>';
     state.recipes.forEach(recipe => {
-        recList.innerHTML += `<button onclick="startCooking(${recipe.id})" class="panel"><span style="font-size:30px;">${recipe.emoji || "🍱"}</span><div style="font-weight:900; font-size:14px;">${recipe.name}</div></button>`;
+        recList.innerHTML += `<button onclick="startCooking(${recipe.id})"><span style="font-size:30px;">${recipe.emoji || "🍱"}</span><div style="font-weight:900; font-size:14px;">${recipe.name}</div></button>`;
     });
 
     const editList = document.getElementById('recipe-edit-list');
@@ -474,7 +446,7 @@ function render() {
             <div class="recipe-edit-row">
                 <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">${recipe.emoji || "🍱"}</span> ${recipe.name}</div>
                 <div style="display:flex;gap:4px;">
-                    <button onclick="editRecipe(${recipe.id})" style="color:#2b6cb0; background:none; border:none; font-weight:bold; cursor:pointer;">編集</button>
+                    <button onclick="editRecipe(${recipe.id})" style="color:var(--accent-color); background:none; border:none; font-weight:bold; cursor:pointer;">編集</button>
                     <button onclick="deleteRecipe(${recipe.id})" style="color:#c53030; background:none; border:none; font-weight:bold; cursor:pointer; margin-left:6px;">削除</button>
                 </div>
             </div>
@@ -509,8 +481,7 @@ function render() {
     histList.innerHTML = '';
     if(state.history.length === 0) histList.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4; font-size:12px; font-weight:bold;">食べた履歴はまだありません😋</div>';
     
-    // 画面には最新の10件だけを表示（データ自体は30件まで保持）
-    state.history.slice(0, 10).forEach(h => {
+    state.history.forEach(h => {
         histList.innerHTML += `
             <div class="history-item-row">
                 <div class="history-meta">${h.date}</div>

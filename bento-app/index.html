@@ -11,6 +11,7 @@
 </head>
 <body class="theme-stylish">
 
+    <!-- ⚙️ スプラッシュ画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">🍱</div>
@@ -19,11 +20,10 @@
         <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
-    <div class="bg-layer" id="main-bg">
-        <div class="glitter-shine"></div>
-        <div class="glitter-shine-overlay"></div>
-    </div>
+    <!-- 背景レイヤー -->
+    <div class="bg-layer" id="main-bg"></div>
 
+    <!-- ヘッダー -->
     <header class="header">
         <div class="header-main">
             <span class="header-label">💰 浮いたお弁当代</span>
@@ -34,19 +34,26 @@
         </div>
     </header>
 
+    <!-- メインコンテンツ -->
     <main class="main-container">
 
+        <!-- 🏠 1. ホーム画面（ストック一覧） -->
         <section id="view-home" class="view active">
-            <button onclick="spinRoulette()" class="btn btn-primary w-full" style="margin-bottom:15px; font-size: 15px;">🎲 今日どれ食べる？（ルーレット）</button>
+            <!-- 遊び心：ルーレットボタン -->
+            <button onclick="spinRoulette()" class="btn btn-primary w-full" style="margin-bottom:15px; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">🎲 今日どれ食べる？（ルーレット）</button>
             
             <div class="list-container" id="inventory-list">
-                </div>
+                <!-- お弁当カードが並びます -->
+            </div>
         </section>
 
+        <!-- 🍳 2. お弁当を作る画面 -->
         <section id="view-cook" class="view">
             <div id="recipe-selection" class="grid-container">
-                </div>
+                <!-- 登録したメニューが並びます -->
+            </div>
 
+            <!-- クッキング中パネル -->
             <div id="cooking-panel" class="panel hidden">
                 <div class="cooking-header">
                     <span id="cooking-emoji" class="text-4xl">🍱</span>
@@ -67,6 +74,7 @@
             </div>
         </section>
 
+        <!-- 🛒 3. お買い物リスト・メニュー管理画面 -->
         <section id="view-menu" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🛒 週末のお買い物リスト</h2>
@@ -95,14 +103,18 @@
             </div>
         </section>
 
+        <!-- 📜 4. 食べた履歴画面 -->
         <section id="view-history" class="view">
             <div class="panel">
                 <h2 class="panel-title">😋 最近食べたお弁当（最新10件）</h2>
+                <p style="font-size:10px; opacity:0.6; margin-bottom:15px;">※スマホの動作を軽くするため、データは最新30件のみ自動保存されます。</p>
                 <div class="history-list" id="history-list">
-                    </div>
+                    <!-- 履歴と取り消し✖ボタン -->
+                </div>
             </div>
         </section>
 
+        <!-- 🛠️ 5. 詳細設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
@@ -110,27 +122,27 @@
                     <option value="theme-stylish">🤍 スタイリッシュ (すりガラス透明感)</option>
                     <option value="theme-cute">🌸 ポップ＆キュート (パステルふんわり)</option>
                     <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン発光)</option>
-                    <option value="theme-glitter">✨ マグネットグリッター (光動くラメツヤ)</option>
                 </select>
             </div>
 
+            <!-- 🎨 カスタムカラーパネル（部位変更版） -->
             <div class="panel" id="color-custom-panel">
                 <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
                 <div class="color-picker-grid">
                     <div class="color-picker-row">
-                        <label>背景の色</label>
+                        <label>全体の背景色</label>
                         <input type="color" id="custom-color-bg" onchange="updateCustomColor('bg', this.value)">
                     </div>
                     <div class="color-picker-row">
-                        <label>文字の色</label>
-                        <input type="color" id="custom-color-text" onchange="updateCustomColor('text', this.value)">
+                        <label>パネルの背景色</label>
+                        <input type="color" id="custom-color-panel" onchange="updateCustomColor('panel', this.value)">
                     </div>
                     <div class="color-picker-row">
-                        <label>ボタン・主役色</label>
-                        <input type="color" id="custom-color-primary" onchange="updateCustomColor('primary', this.value)">
+                        <label>アクセント（ボタン等）</label>
+                        <input type="color" id="custom-color-accent" onchange="updateCustomColor('accent', this.value)">
                     </div>
                 </div>
-                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期状態に戻す</button>
+                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期化</button>
             </div>
 
             <div class="panel">
@@ -167,14 +179,6 @@
             </div>
 
             <div class="panel">
-                <h2 class="panel-title">🔑 パスワードの変更</h2>
-                <div class="form-group">
-                    <input type="password" id="settings-password" class="form-input" placeholder="新しい4桁の数字">
-                </div>
-                <button onclick="savePasswordOnly()" class="btn btn-outline w-full">パスワードを変更</button>
-            </div>
-
-            <div class="panel">
                 <h2 class="panel-title">☁️ クラウド同期・バックアップ (GAS)</h2>
                 <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのURLを貼り付け">
                 <div class="button-group" style="margin-top:10px;">
@@ -184,11 +188,14 @@
                 <label class="flex-row-label">
                     <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)"> 操作時に自動バックアップを行う
                 </label>
+                <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+                <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
             </div>
         </section>
 
     </main>
 
+    <!-- 📱 下部ナビゲーション -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-home"><span class="icon">🍱</span><br><span class="label">ストック</span></button>
         <button class="nav-btn" data-target="view-cook"><span class="icon">🍳</span><br><span class="label">作った</span></button>

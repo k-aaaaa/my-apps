@@ -1,130 +1,64 @@
 /* ==========================================================================
-   🎨 ユーザーカスタムカラー初期値（CSS変数）
+   🎨 グローバル CSS 変数（カスタム対象）
    ========================================================================== */
 :root {
-    --stylish-bg: radial-gradient(circle at 20% 20%, #e2e8f0 0%, #cbd5e1 100%);
-    --stylish-text: #1d1d1f;
-    --stylish-primary: #1d1d1f;
-    --cute-bg: linear-gradient(135deg, #ffe3e3 0%, #fff0f5 100%);
-    --cute-text: #4a3737;
-    --cute-primary: linear-gradient(135deg, #ffb3c1, #ffccd5);
-    --gaming-bg: radial-gradient(circle at center, #0f0c1b 0%, #050508 100%);
-    --gaming-text: #00ffcc;
-    --gaming-primary: #00ffcc;
-    --glitter-bg: linear-gradient(135deg, #0f0526 0%, #03010a 60%, #0c1a24 100%);
-    --glitter-text: #ffffff;
-    --glitter-primary: linear-gradient(135deg, #8a2be2, #4a00e0);
-    --glitter-reflect: rgba(0, 220, 255, 0.4);
+    --bg-color: #f4f5f7;
+    --panel-bg: rgba(255, 255, 255, 0.6);
+    --accent-color: #1d1d1f;
+    --text-color: #1d1d1f;
 }
 
-/* ==========================================================================
-   🌐 ベースレイアウト
-   ========================================================================== */
 body {
     margin: 0; padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     overflow: hidden; padding-bottom: 80px; height: 100vh; box-sizing: border-box;
-    transition: color 0.3s ease, background 0.3s ease;
+    background: var(--bg-color); color: var(--text-color);
+    transition: all 0.3s ease;
 }
 
-.bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; overflow: hidden; }
+.bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; overflow: hidden; background: var(--bg-color); transition: all 0.3s ease;}
 .view { display: none; animation: appViewFadeIn 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
 .view.active { display: block; }
 @keyframes appViewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-.header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: var(--panel-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 100; transition: background 0.3s ease;}
 .header-main { display: flex; flex-direction: column; }
 .header-label { font-size: 10px; opacity: 0.6; font-weight: bold; margin-bottom: 2px; }
 .header-money { font-weight: 900; font-size: 24px; cursor: pointer; transition: opacity 0.2s; }
 .main-container { height: calc(100vh - 140px); overflow-y: auto; padding: 20px; box-sizing: border-box; -webkit-overflow-scrolling: touch; position: relative; z-index: 10; }
 
-/* ==========================================================================
-   🎨 各テーマのデザイン定義
-   ========================================================================== */
-.theme-stylish { background: #f4f5f7; color: var(--stylish-text); }
-.theme-stylish .bg-layer { background: var(--stylish-bg); }
-.theme-stylish .panel, .theme-stylish .bento-card { background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.5); }
-.theme-stylish .btn-primary { background: var(--stylish-primary); color: #ffffff; }
-.theme-stylish .btn-outline { border: 1px solid var(--stylish-text); color: var(--stylish-text); background: transparent; }
-.theme-stylish .currency-display { background: rgba(0,0,0,0.05); color: var(--stylish-text); border: 1px solid rgba(0,0,0,0.1); padding: 5px 10px; border-radius: 12px; font-weight: bold;}
-.theme-stylish .btn-circle { background: rgba(0,0,0,0.05); color: var(--stylish-text); }
-.theme-stylish .btn-eat { background: #a2d2ff; color: white; }
-
-.theme-cute { background: #fff5f5; color: var(--cute-text); }
-.theme-cute .bg-layer { background: var(--cute-bg); }
-.theme-cute .panel, .theme-cute .bento-card { background: rgba(255, 255, 255, 0.85); border-radius: 24px !important; border: 3px solid #ffccd5; box-shadow: 0 6px 0 #ffb3c1; }
-.theme-cute .btn { border-radius: 20px !important; }
-.theme-cute .btn-primary { background: var(--cute-primary); color: var(--cute-text); box-shadow: 0 4px 0 #ff85a1; font-weight: bold; }
-.theme-cute .btn-outline { border: 2px solid #ffccd5; color: #ff85a1; background: #ffffff; box-shadow: 0 3px 0 #ffccd5; }
-.theme-cute .currency-display { background: #fff0f5; color: #ff758f; border: 2px solid #ffccd5; border-radius: 15px; padding: 5px 10px; font-weight: bold;}
-.theme-cute .btn-circle { background: #ffe3e3; color: #ff758f; }
-.theme-cute .btn-eat { background: #ff758f; color: white; box-shadow: 0 3px 0 #ff477e; }
-
-.theme-gaming { background: #07070c; color: var(--gaming-text); }
-.theme-gaming .bg-layer { background: var(--gaming-bg); background-image: radial-gradient(rgba(0,255,204,0.1) 1px, transparent 1px); background-size: 20px 20px; }
-.theme-gaming .panel, .theme-gaming .bento-card { background: rgba(10, 10, 20, 0.8); border: 1px solid var(--gaming-text); box-shadow: 0 0 15px rgba(0,255,204,0.3); }
-.theme-gaming .btn-primary { background: var(--gaming-primary); color: #000000; font-weight: 900; box-shadow: 0 0 15px var(--gaming-primary); }
-.theme-gaming .btn-outline { border: 1px solid #ff00cc; color: #ff00cc; background: transparent; }
-.theme-gaming .currency-display { background: rgba(0,255,204,0.1); color: var(--gaming-text); border: 1px solid var(--gaming-text); padding: 5px 10px; border-radius: 12px; font-weight: bold;}
-.theme-gaming .btn-circle { background: rgba(0,255,204,0.1); color: var(--gaming-text); border: 1px solid var(--gaming-text); }
-.theme-gaming .btn-eat { background: #ff0055; color: white; box-shadow: 0 0 10px #ff0055; font-weight: 900; }
-
-.theme-glitter { background: #060214; color: var(--glitter-text); }
-.theme-glitter .bg-layer { background: var(--glitter-bg); }
-.theme-glitter .glitter-shine {
-    display: block !important; position: absolute; top: -60%; left: -60%; width: 220%; height: 220%;
-    background-image: 
-        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4) 1px, transparent 2px),
-        radial-gradient(circle at 70% 40%, rgba(255,255,255,0.3) 2px, transparent 3px),
-        linear-gradient(115deg, transparent 35%, var(--glitter-reflect) 48%, rgba(255,255,255,0.6) 50%, var(--glitter-reflect) 52%, transparent 65%);
-    background-size: 50px 50px, 70px 70px, 100% 100%;
-    transform: translate3d(0, 0, 0) rotate(-15deg); will-change: transform;
-    animation: sharpMagnetShimmer 7s ease-in-out infinite alternate; z-index: -1; pointer-events: none;
-}
-@keyframes sharpMagnetShimmer {
-    0% { transform: translate3d(-4%, -4%, 0) rotate(-18deg) scale(0.95); filter: brightness(0.85) contrast(1.2); }
-    100% { transform: translate3d(4%, 4%, 0) rotate(-12deg) scale(1.05); filter: brightness(1.3) contrast(1.5); }
-}
-.theme-glitter .panel, .theme-glitter .bento-card { background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1), 0 12px 40px rgba(0,0,0,0.5); }
-.theme-glitter .btn-primary { background: var(--glitter-primary); color: white; box-shadow: 0 4px 15px rgba(138,43,226,0.4); }
-.theme-glitter .btn-outline { border: 1px solid rgba(255,255,255,0.3); color: var(--glitter-text); background: rgba(255,255,255,0.05); }
-.theme-glitter .currency-display { background: rgba(0,191,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); padding: 5px 10px; border-radius: 12px; font-weight: bold;}
-.theme-glitter .btn-circle { background: rgba(255,255,255,0.1); color: white; }
-.theme-glitter .btn-eat { background: linear-gradient(135deg, #00ced1, #008b8b); color: white; }
-
-/* ==========================================================================
-   🧱 UIコンポーネント
-   ========================================================================== */
+/* UIコンポーネント */
 .space-y > * { margin-bottom: 20px; }
-.panel { padding: 20px; border-radius: 16px; margin-bottom: 20px; box-sizing: border-box; }
+.panel, .bento-card { padding: 20px; border-radius: 16px; margin-bottom: 20px; box-sizing: border-box; background: var(--panel-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.2); transition: background 0.3s ease;}
 .panel-title { margin: 0 0 15px 0; font-size: 15px; font-weight: bold; opacity: 0.9; }
 
 .color-picker-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-.color-picker-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 10px; font-weight: bold; font-size: 13px; }
-.theme-gaming .color-picker-row, .theme-glitter .color-picker-row { background: rgba(255,255,255,0.05); }
+.color-picker-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 10px; font-weight: bold; font-size: 13px; }
 .color-picker-row input[type="color"] { border: none; width: 40px; height: 30px; border-radius: 6px; cursor: pointer; background: transparent; }
 
 .form-group { margin-bottom: 15px; }
 .form-group label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; opacity: 0.8; }
 .form-row { display: flex; gap: 10px; }
 .flex-1 { flex: 1; }
-.form-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.6); color: inherit; font-weight: bold; box-sizing: border-box; font-size: 14px; transition: all 0.2s; }
-.theme-gaming .form-input, .theme-glitter .form-input { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); }
-.form-input:focus { outline: none; border-color: currentColor; }
+.form-input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: rgba(255,255,255,0.8); color: #333; font-weight: bold; box-sizing: border-box; font-size: 14px; transition: all 0.2s; }
+.form-input:focus { outline: none; border-color: var(--accent-color); }
+.file-input { padding: 8px; }
 
-.btn { border: none; padding: 14px; border-radius: 12px; font-weight: 800; cursor: pointer; text-align: center; font-size: 14px; transition: transform 0.1s; user-select: none; }
+.btn { border: none; padding: 14px; border-radius: 12px; font-weight: 800; cursor: pointer; text-align: center; font-size: 14px; transition: transform 0.1s, background 0.3s; user-select: none; }
 .btn:active { transform: scale(0.95); }
 .w-full { width: 100%; }
 .button-group { display: flex; gap: 10px; margin-top: 10px; }
 .button-group .btn { flex: 1; padding: 10px; font-size: 12px; }
+
+.btn-primary { background: var(--accent-color); color: #fff; }
+.btn-outline { border: 2px solid var(--accent-color); color: var(--accent-color); background: transparent; }
 .btn-share { background: #00d4ff; color: #000; font-weight: bold; }
 .btn-text-danger { background: transparent; border: none; color: #ff4444; font-weight: bold; font-size: 11px; text-decoration: underline; cursor: pointer; }
+.currency-display { background: rgba(0,0,0,0.1); color: inherit; padding: 5px 10px; border-radius: 12px; font-weight: bold; }
 .hidden { display: none !important; }
 
-/* ==========================================================================
-   🍱 お弁当・固有スタイル
-   ========================================================================== */
-.bento-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 16px; box-sizing: border-box; margin-bottom: 10px; }
+/* お弁当・固有スタイル */
+.bento-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 10px; }
 .bento-info { display: flex; align-items: center; gap: 14px; }
 .bento-emoji-wrapper { font-size: 36px; }
 .bento-details { display: flex; flex-direction: column; justify-content: center; }
@@ -135,57 +69,50 @@ body {
 .badge-warning { background: linear-gradient(135deg, #ffb84d, #ff9900); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; }
 
 .bento-qty-control { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.btn-circle { width: 28px; height: 28px; border-radius: 50%; border: none; font-weight: 900; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-circle { width: 28px; height: 28px; border-radius: 50%; border: none; font-weight: 900; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.08); color: inherit; }
 .qty-display { font-weight: 900; font-size: 15px; min-width: 20px; text-align: center; }
-.btn-eat { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; }
+.btn-eat { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; background: var(--accent-color); color: #fff; }
 
 .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 20px; }
-.grid-container button { padding: 20px 15px; border-radius: 16px; border: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; color: inherit; font-size: 14px; font-weight: bold;}
+.grid-container button { padding: 20px 15px; border-radius: 16px; border: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; color: inherit; font-size: 14px; font-weight: bold; background: var(--panel-bg); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.05); backdrop-filter: blur(10px);}
 .cooking-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 12px; }
 .cooking-title { font-size: 18px; font-weight: 900; }
 .counter-input { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
 .counter-input .btn-circle { width: 44px; height: 44px; font-size: 20px; }
 .counter-input .form-input { width: 80px; font-size: 24px; }
 
+/* メニュー・お買い物リスト */
 .shopping-item-row { display: flex; align-items: center; padding: 6px 0; font-weight: bold; font-size: 14px; }
 .shopping-checkbox { width: 18px; height: 18px; margin-right: 10px; }
 .ing-tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.ing-tag { padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
-.ing-tag.active { background: #e7f5ff; color: #1c7ed6; }
-.ing-tag.crossed { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.3); text-decoration: line-through; }
+.ing-tag { padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s;}
+.ing-tag.active { background: var(--accent-color); color: #fff; opacity: 0.9;}
+.ing-tag.crossed { background: rgba(0,0,0,0.05); color: inherit; opacity: 0.4; text-decoration: line-through; }
 
 .recipe-edit-list { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
-.recipe-edit-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.03); font-size: 13px; font-weight: bold; }
+.recipe-edit-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 10px; background: rgba(0,0,0,0.05); font-size: 13px; font-weight: bold; }
 
-.history-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-radius: 12px; background: rgba(0,0,0,0.02); margin-bottom: 8px; font-size: 13px; font-weight: bold; }
+/* 履歴 */
+.history-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-radius: 12px; background: rgba(0,0,0,0.03); margin-bottom: 8px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
 .history-meta { font-size: 10px; opacity: 0.4; }
 .history-core { flex: 1; margin-left: 10px; display: flex; align-items: center; gap: 4px; }
 .history-amount { font-weight: 900; margin-right: 12px; }
+.btn-delete-history { background: none; border: none; font-size: 16px; font-weight: bold; color: inherit; opacity: 0.5; cursor: pointer; padding: 0 5px;}
+.btn-delete-history:active { transform: scale(0.9); }
 
-/* ==========================================================================
-   🌟 スプラッシュ画面
-   ========================================================================== */
+/* スプラッシュ */
 .fixed-splash { position: fixed; inset: 0; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1d1d1f; color: white; transition: opacity 0.5s ease, visibility 0.5s; }
 .splash-content { text-align: center; }
 .splash-logo { font-size: 70px; margin-bottom: 15px; }
 .splash-title { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
-.splash-custom-img { max-width: 80%; max-height: 70%; object-fit: contain; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.splash-custom-img { max-width: 80%; max-height: 70%; object-fit: contain; border-radius: 20px; }
 .img-preview { display: block; max-height: 70px; object-fit: cover; margin: 5px auto; border-radius: 8px; }
 .flex-row-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; margin-top: 15px; opacity: 0.8; }
 
-/* ==========================================================================
-   📱 ナビゲーションバー
-   ========================================================================== */
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: rgba(255,255,255,0.1); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid rgba(255,255,255,0.1); display: flex; z-index: 1000; padding-bottom: 12px; box-sizing: border-box; }
-.theme-stylish .bottom-nav { background: rgba(255,255,255,0.4); border-top: 1px solid rgba(0,0,0,0.05); }
-.theme-cute .bottom-nav { background: rgba(255,255,255,0.9); border-top: 3px solid #ffccd5; height: 80px; }
-.theme-gaming .bottom-nav { background: rgba(5,5,10,0.9); border-top: 1px solid #00ffcc; }
+/* ナビゲーションバー */
+.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: var(--panel-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-top: 1px solid rgba(255,255,255,0.1); display: flex; z-index: 1000; padding-bottom: 12px; box-sizing: border-box; transition: background 0.3s ease; }
 .nav-btn { flex: 1; background: none; border: none; color: #888; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; }
 .nav-btn .icon { font-size: 20px; margin-bottom: 2px; transition: transform 0.2s; }
 .nav-btn .label { font-size: 9px; font-weight: bold; }
-.nav-btn.active { color: currentColor; }
+.nav-btn.active { color: var(--accent-color); }
 .nav-btn.active .icon { transform: translateY(-4px) scale(1.15); }
-.theme-stylish .nav-btn.active { color: #000000; }
-.theme-cute .nav-btn.active { color: #ff758f; }
-.theme-gaming .nav-btn.active { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
-.theme-glitter .nav-btn.active { color: #00d4ff; }
