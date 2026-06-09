@@ -11,7 +11,6 @@
 </head>
 <body class="theme-stylish">
 
-    <!-- 🔒 セキュリティ：PINロック画面（最前面） -->
     <div id="lock-screen" class="fixed-overlay hidden">
         <div class="lock-container">
             <div class="lock-icon">🔒</div>
@@ -37,7 +36,6 @@
         </div>
     </div>
 
-    <!-- 🔒 セキュリティ：秘密の質問（復旧画面） -->
     <div id="recovery-screen" class="fixed-overlay hidden">
         <div class="modal-content">
             <h2>🔐 パスワードの復旧</h2>
@@ -57,7 +55,6 @@
         </div>
     </div>
     
-    <!-- ⚙️ スプラッシュ画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">📈</div>
@@ -65,18 +62,14 @@
         </div>
     </div>
 
-    <!-- 背景レイヤー -->
     <div class="bg-layer" id="main-bg"></div>
 
-    <!-- ヘッダー -->
     <header class="header">
         <div class="header-title">MY ASSET</div>
     </header>
 
-    <!-- メインコンテンツ -->
     <main class="main-container">
 
-        <!-- 📈 1. 証券口座メイン画面 -->
         <section id="view-securities" class="view active">
             <div class="total-asset-panel">
                 <div class="total-label">証券口座 評価額</div>
@@ -94,24 +87,26 @@
 
             <div class="panel">
                 <h2 class="panel-title">📊 評価額の推移 (履歴)</h2>
-                <div id="securities-history-list" class="history-list">
-                    <!-- 履歴がここに入ります -->
-                </div>
+                <div id="securities-history-list" class="history-list"></div>
             </div>
         </section>
 
-        <!-- ✉️ 2. 封筒貯金画面 -->
         <section id="view-envelopes" class="view">
             <div class="button-group" style="margin-bottom: 20px;">
                 <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
             </div>
-            
-            <div id="envelopes-grid" class="envelopes-grid">
-                <!-- 封筒カードがここに入ります -->
-            </div>
+            <div id="envelopes-grid" class="envelopes-grid"></div>
         </section>
 
-        <!-- ⚙️ 3. 設定画面 -->
+        <section id="view-archive" class="view">
+            <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
+                <h2 class="panel-title" style="text-align: center; font-size: 16px;">📅 月末振り返り図鑑</h2>
+                <p style="font-size: 11px; text-align: center; opacity: 0.8; margin: 0;">毎月25日に自動生成される、あなたの資産の成長記録です。</p>
+            </div>
+            <div id="archive-list" class="space-y">
+                </div>
+        </section>
+
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ</h2>
@@ -124,7 +119,6 @@
 
             <div class="panel" style="border: 2px solid #ff4444;">
                 <h2 class="panel-title">🔒 アプリロック設定</h2>
-                <p style="font-size:11px; opacity:0.8; margin-bottom:10px;">アプリ起動時に4桁の暗証番号を要求します。</p>
                 <div id="lock-status-display" style="margin-bottom:10px; font-weight:bold;">状態: <span id="lock-status-text">未設定</span></div>
                 <button class="btn btn-outline w-full" id="btn-setup-lock" onclick="openLockSetupModal()">ロックを設定・変更する</button>
                 <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()" style="margin-top:10px;">ロックを解除（オフにする）</button>
@@ -132,25 +126,52 @@
 
             <div class="panel" style="border: 2px solid var(--accent-color);">
                 <h2 class="panel-title">💾 究極のデータバックアップ</h2>
-                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">全データを「ファイル」として安全に書き出します。新機能追加時も自動穴埋めで安全に復元できます！</p>
                 <button onclick="exportData()" class="btn btn-primary w-full" style="margin-bottom:10px;">📥 データを書き出す (保存)</button>
                 <label class="btn btn-outline w-full text-center" style="display:block; cursor:pointer;">
                     📤 ファイルからデータを復元する
                     <input type="file" accept=".json" class="hidden" onchange="importData(event)">
                 </label>
             </div>
+
+            <div class="panel" style="background: rgba(0,0,0,0.05); border: 1px dashed #aaa;">
+                <h2 class="panel-title">🛠️ デバッグ・動作確認用</h2>
+                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">通常は25日にしか出ないポップアップを、今すぐテスト起動できます。</p>
+                <button onclick="trigger25thReport(true)" class="btn btn-outline w-full" style="font-size:12px; padding:8px;">🚨 今すぐ25日振り返りをテスト実行</button>
+            </div>
         </section>
 
     </main>
 
-    <!-- ✉️ 封筒作成・編集モーダル -->
+    <div id="modal-report-25th" class="modal hidden" style="z-index: 4000;">
+        <div class="modal-content" style="width: 340px; max-height: 85vh; overflow-y: auto; border: 3px solid #ffd700;">
+            <div style="font-size: 40px; margin-bottom: 5px;">🎉</div>
+            <h2 style="margin-bottom: 5px;">25日 月末振り返りレポート！</h2>
+            <div id="report-date-title" style="font-size: 12px; font-weight: bold; opacity: 0.6; margin-bottom: 20px;">2024/--/25</div>
+            
+            <div class="report-stat-block">
+                <div class="report-stat-item">
+                    <div class="report-stat-label">📈 証券口座評価額</div>
+                    <div class="report-stat-value" id="report-securities-val">¥0</div>
+                </div>
+                <div class="report-stat-item">
+                    <div class="report-stat-label">✉️ 封筒貯金 総額</div>
+                    <div class="report-stat-value" id="report-envelopes-val">¥0</div>
+                </div>
+            </div>
+
+            <div id="report-comment" class="report-comment"></div>
+
+            <button class="btn btn-primary w-full" onclick="closeModal('modal-report-25th')" style="margin-top: 15px;">素晴らしい！(閉じる)</button>
+        </div>
+    </div>
+
     <div id="modal-envelope" class="modal hidden">
         <div class="modal-content">
             <h2 id="modal-envelope-title">新しい封筒</h2>
             <input type="hidden" id="envelope-edit-id">
             <div class="form-group">
                 <label>アイコン (絵文字)</label>
-                <input type="text" id="env-input-emoji" class="form-input" placeholder="例: 🚗, ✈️, 🎁" maxlength="2" value="💰">
+                <input type="text" id="env-input-emoji" class="form-input" placeholder="例: 🚗, ✈️" maxlength="2" value="💰">
             </div>
             <div class="form-group">
                 <label>封筒の名前</label>
@@ -179,7 +200,6 @@
         </div>
     </div>
 
-    <!-- 💰 封筒 出し入れモーダル -->
     <div id="modal-envelope-money" class="modal hidden">
         <div class="modal-content">
             <h2><span id="em-emoji"></span> <span id="em-name"></span></h2>
@@ -196,7 +216,6 @@
         </div>
     </div>
 
-    <!-- 🔒 ロック設定モーダル -->
     <div id="modal-lock-setup" class="modal hidden">
         <div class="modal-content">
             <h2>ロックの設定</h2>
@@ -221,10 +240,10 @@
         </div>
     </div>
 
-    <!-- 📱 下部ナビゲーション -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
         <button class="nav-btn" data-target="view-envelopes"><span class="icon">✉️</span><br><span class="label">封筒貯金</span></button>
+        <button class="nav-btn" data-target="view-archive"><span class="icon">📖</span><br><span class="label">記録</span></button>
         <button class="nav-btn" data-target="view-settings"><span class="icon">⚙️</span><br><span class="label">設定</span></button>
     </nav>
 

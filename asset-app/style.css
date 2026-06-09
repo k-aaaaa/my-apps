@@ -56,7 +56,7 @@ body {
 .diff-down { color: #ffb2b2; }
 
 /* 履歴リスト */
-.history-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
+.history-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(0,0,0,0.03); border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }
 .history-date { font-size: 12px; opacity: 0.6; font-weight: bold; }
 .history-amount { font-size: 16px; font-weight: 900; }
@@ -74,6 +74,21 @@ body {
 .env-progress-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.1); border-radius: 4px; overflow: hidden; }
 .env-progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 .env-edit-btn { position: absolute; top: 12px; right: 10px; background: rgba(255,255,255,0.3); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 12px; cursor: pointer; z-index: 10;}
+
+/* 📅 振り返り図鑑（アーカイブ）カード */
+.archive-card { background: var(--panel-bg); border-radius: 16px; padding: 20px; border-left: 5px solid #ffd700; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.archive-date { font-size: 16px; font-weight: 900; margin-bottom: 12px; display: flex; justify-content: space-between; }
+.archive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.archive-stat-box { background: rgba(0,0,0,0.03); padding: 10px; border-radius: 10px; text-align: center; }
+.archive-stat-lbl { font-size: 10px; opacity: 0.6; font-weight: bold; margin-bottom: 3px; }
+.archive-stat-val { font-size: 15px; font-weight: 900; }
+
+/* 25日レポートポップアップ内の装飾 */
+.report-stat-block { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
+.report-stat-item { background: rgba(0,0,0,0.04); padding: 12px 5px; border-radius: 12px; }
+.report-stat-label { font-size: 10px; opacity: 0.7; font-weight: bold; margin-bottom: 5px; }
+.report-stat-value { font-size: 16px; font-weight: 900; }
+.report-comment { background: rgba(255,215,0,0.1); border-radius: 12px; padding: 12px; font-size: 13px; font-weight: bold; line-height: 1.5; text-align: left; margin: 15px 0; color: #554000; border: 1px dashed #ffd700; }
 
 /* モーダル */
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
