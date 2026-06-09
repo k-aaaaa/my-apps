@@ -1,29 +1,8 @@
 // ==========================================================================
-// 🔑 1. 4桁パスワード認証システム
+// 🚀 パスワード撤廃・初期化
 // ==========================================================================
-(function() {
-    let savedPass = localStorage.getItem('asset_password');
-    if (!savedPass) {
-        savedPass = prompt("【初回設定】\n資産管理アプリ専用のパスワードを半角数字で決めてください。\n(例: 0000 など自由な数字)");
-        if (savedPass) localStorage.setItem('asset_password', savedPass);
-        else savedPass = "0000";
-    }
-    const authKey = "app_auth_asset";
-    if (sessionStorage.getItem(authKey) !== "true") {
-        if (prompt("パスワードを入力してください") === savedPass) {
-            sessionStorage.setItem(authKey, "true");
-        } else {
-            document.body.innerHTML = "<div style='padding:50px;text-align:center;'><h1>認証失敗</h1><button onclick='location.reload()'>再試行</button></div>";
-            throw new Error("Auth failed");
-        }
-    }
-})();
-
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
-// ==========================================================================
-// 💾 2. デフォルトのご褒美マイルストーン設定
-// ==========================================================================
 const defaultStamps = [
     { target: 0, reward: "資産形成スタート！偉い！" },
     { target: 100000, reward: "ちょっといいコンビニスイーツプチ贅沢" },
@@ -34,9 +13,6 @@ const defaultStamps = [
     { target: 10000000, reward: "大台突破記念！最高級のディナーを堪能する" }
 ];
 
-// ==========================================================================
-// 💾 3. グローバルデータ構造と初期化
-// ==========================================================================
 let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
     evaluation: 0,       
     memo: "",            
@@ -52,12 +28,11 @@ let state = JSON.parse(localStorage.getItem('asset_universe_data')) || {
     achievedTargets: [],  
     autoSync: false,
     splashTime: 1200,
-    graphMode: 'milestone', // 'milestone' (5年ごと棒) または 'area' (なだらかな面)
+    graphMode: 'milestone', 
     customColors: {
-        'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
-        'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
-        'theme-gaming': { bg: '#050508', text: '#00ffcc', primary: '#00ffcc' },
-        'theme-glitter': { bg: '#03010a', text: '#ffffff', primary: '#8a2be2' }
+        'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+        'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+        'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
     }
 };
 let GAS_URL = localStorage.getItem('asset_gas_url') || "";
@@ -97,80 +72,74 @@ function showToast(msg) {
 }
 
 // ==========================================================================
-// 🎨 4. カラーカスタマイズ制御エンジン
+// 🎨 カラーカスタマイズ制御（部位変更版）
 // ==========================================================================
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
-    document.body.className = theme;
     const themeSel = document.getElementById('theme-selector');
     if (themeSel) themeSel.value = theme;
 
-    if (!state.customColors || !state.customColors[theme]) {
-        state.customColors = state.customColors || {};
-        state.customColors[theme] = { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' };
+    if (!state.customColors[theme]) {
+        const defaults = {
+            'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+            'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+            'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
+        };
+        state.customColors[theme] = defaults[theme] || defaults['theme-stylish'];
     }
 
     const colors = state.customColors[theme];
     const root = document.documentElement;
+    root.style.setProperty('--bg-color', colors.bg);
+    root.style.setProperty('--panel-bg', colors.panel);
+    root.style.setProperty('--accent-color', colors.accent);
 
-    if (theme === 'theme-stylish') {
-        root.style.setProperty('--stylish-bg', `radial-gradient(circle at 20% 20%, #ffffff 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--stylish-text', colors.text);
-        root.style.setProperty('--stylish-primary', colors.primary);
-    } else if (theme === 'theme-cute') {
-        root.style.setProperty('--cute-bg', `linear-gradient(135deg, #ffffff 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--cute-text', colors.text);
-        root.style.setProperty('--cute-primary', colors.primary);
-    } else if (theme === 'theme-gaming') {
-        root.style.setProperty('--gaming-bg', `radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, ${colors.bg} 100%)`);
-        root.style.setProperty('--gaming-text', colors.text);
-        root.style.setProperty('--gaming-primary', colors.primary);
-    } else if (theme === 'theme-glitter') {
-        root.style.setProperty('--glitter-bg', `linear-gradient(135deg, #0e0524 0%, ${colors.bg} 60%, #000000 100%)`);
-        root.style.setProperty('--glitter-text', colors.text);
-        root.style.setProperty('--glitter-primary', colors.primary);
-        root.style.setProperty('--glitter-reflect', colors.primary + "66"); 
-    }
+    const hexToLuma = (color) => {
+        const hex = color.replace('#', '');
+        if(hex.length !== 6) return 1;
+        const r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+        return [0.299 * r, 0.587 * g, 0.114 * b].reduce((a, b) => a + b) / 255;
+    };
+    root.style.setProperty('--text-color', hexToLuma(colors.bg) > 0.5 ? '#1d1d1f' : '#ffffff');
+
+    const rgbaToHex = (rgba) => {
+        const match = rgba.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)/i);
+        return (match && match.length === 4) ? "#" + ("0" + parseInt(match[1],10).toString(16)).slice(-2) + ("0" + parseInt(match[2],10).toString(16)).slice(-2) + ("0" + parseInt(match[3],10).toString(16)).slice(-2) : rgba;
+    };
 
     const pickerBg = document.getElementById('custom-color-bg');
-    const pickerText = document.getElementById('custom-color-text');
-    const pickerPrimary = document.getElementById('custom-color-primary');
-    if (pickerBg) pickerBg.value = colors.bg.startsWith('#') ? colors.bg : '#cbd5e1';
-    if (pickerText) pickerText.value = colors.text.startsWith('#') ? colors.text : '#1d1d1f';
-    if (pickerPrimary) pickerPrimary.value = colors.primary.startsWith('#') ? colors.primary : '#1d1d1f';
+    const pickerPanel = document.getElementById('custom-color-panel');
+    const pickerAccent = document.getElementById('custom-color-accent');
+    if (pickerBg) pickerBg.value = rgbaToHex(colors.bg);
+    if (pickerPanel) pickerPanel.value = rgbaToHex(colors.panel);
+    if (pickerAccent) pickerAccent.value = rgbaToHex(colors.accent);
 }
 
 function updateCustomColor(type, value) {
     const theme = state.appTheme || 'theme-stylish';
     state.customColors[theme][type] = value;
-    applyCurrentThemeAndColors();
-    saveLocal();
+    applyCurrentThemeAndColors(); saveLocal();
 }
 
 function resetCurrentThemeColors() {
     vibrate();
     const theme = state.appTheme || 'theme-stylish';
     const defaults = {
-        'theme-stylish': { bg: '#cbd5e1', text: '#1d1d1f', primary: '#1d1d1f' },
-        'theme-cute': { bg: '#fff0f5', text: '#4a3737', primary: '#ffb3c1' },
-        'theme-gaming': { bg: '#050508', text: '#00ffcc', primary: '#00ffcc' },
-        'theme-glitter': { bg: '#03010a', text: '#ffffff', primary: '#8a2be2' }
+        'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
+        'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
+        'theme-gaming': { bg: '#07070c', panel: 'rgba(10, 10, 20, 0.8)', accent: '#00ffcc' }
     };
     state.customColors[theme] = { ...defaults[theme] };
-    applyCurrentThemeAndColors();
-    saveLocal();
-    showToast("テーマの色を初期化しました");
+    applyCurrentThemeAndColors(); saveLocal();
+    showToast("テーマの色を初期状態に戻しました！");
 }
 
 function changeAppTheme(themeName) {
-    vibrate();
-    state.appTheme = themeName;
-    applyCurrentThemeAndColors();
-    saveLocal();
+    vibrate(); state.appTheme = themeName; applyCurrentThemeAndColors(); saveLocal();
 }
 
 // ==========================================================================
-// 📱 5. タブメニュー切り替え
+// 📱 タブ切替・モザイク
 // ==========================================================================
 document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -182,19 +151,8 @@ document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
     });
 });
 
-// ==========================================================================
-// 🕵️ 6. のぞき見防止フィルター
-// ==========================================================================
-function toggleBlur(el) {
-    vibrate();
-    el.classList.toggle('blurred-off');
-}
-
-function applyPeepingFilterToggle(checked) {
-    state.peepingFilterActive = checked;
-    saveLocal();
-}
-
+function toggleBlur(el) { vibrate(); el.classList.toggle('blurred-off'); }
+function applyPeepingFilterToggle(checked) { state.peepingFilterActive = checked; saveLocal(); }
 function refreshPeepingBlurState() {
     document.querySelectorAll('.blur-click').forEach(el => {
         if (state.peepingFilterActive) el.classList.remove('blurred-off'); 
@@ -203,51 +161,38 @@ function refreshPeepingBlurState() {
 }
 
 // ==========================================================================
-// 🏠 7. ダッシュボード：現在のリアル資産総額の更新とスタンプ判定
+// 🏠 ダッシュボード更新
 // ==========================================================================
 function updateEvalPrompt() {
     vibrate();
     const val = prompt("現在のリアルな総資産残高を入力してください（半角数字）:", state.evaluation || "");
     if (val !== null && !isNaN(val) && val !== "") {
-        const numVal = parseInt(val);
-        const txtMemo = prompt("今回の更新に関する「一言メモ」があれば入力してください（空欄OK）");
+        state.evaluation = parseInt(val);
+        state.memo = prompt("今回の更新に関する「一言メモ」があれば入力してください（空欄OK）") || "";
         
-        state.evaluation = numVal;
-        state.memo = txtMemo || "";
         if (!state.achievedTargets) state.achievedTargets = [];
-        
         state.stamps.forEach(s => {
             if (state.evaluation >= s.target && !state.achievedTargets.includes(s.target)) {
                 state.achievedTargets.push(s.target);
-                setTimeout(() => {
-                    confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } });
-                    alert(`🎉 おめでとうございます！\n総資産が【${s.target === 0 ? "START" : s.target.toLocaleString() + "円"}】を突破しました！\n\n💮 解放されたご褒美：\n${s.reward}`);
-                }, 400);
+                setTimeout(() => { confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 } }); alert(`🎉 おめでとうございます！\n総資産が【${s.target === 0 ? "START" : s.target.toLocaleString() + "円"}】を突破しました！\n\n💮 解放されたご褒美：\n${s.reward}`); }, 400);
             }
         });
-
-        saveLocal();
-        showToast("📈 最新の資産総額を更新しました！");
+        saveLocal(); showToast("📈 最新の資産総額を更新しました！");
     }
 }
 
 // ==========================================================================
-// 📊 8. 計算機：ワンタッチ積立額変更＆グラフモード切替
+// 📊 シミュレーター・ワンタッチ操作・リッチポップアップ
 // ==========================================================================
 function changeMonthly(delta) {
     vibrate();
     const input = document.getElementById('input-monthly');
-    let currentVal = parseInt(input.value) || 0;
-    currentVal = Math.max(0, currentVal + delta);
-    input.value = currentVal;
-    // 数値変更と同時にシミュレーションを即時再計算（グラフが動く）
+    input.value = Math.max(0, (parseInt(input.value) || 0) + delta);
     saveSimulationConditions();
 }
 
 function toggleGraphMode() {
-    vibrate();
-    state.graphMode = state.graphMode === 'milestone' ? 'area' : 'milestone';
-    saveLocal();
+    vibrate(); state.graphMode = state.graphMode === 'milestone' ? 'area' : 'milestone'; saveLocal();
 }
 
 function saveSimulationConditions() {
@@ -259,38 +204,86 @@ function saveSimulationConditions() {
     state.inflation = parseFloat(document.getElementById('input-inflation').value) || 2.0;
     
     if (state.ageCurrent >= state.ageTarget) {
-        alert("⚠️ 目標の年齢は、現在の年齢より高い歳を設定してください！");
         state.ageTarget = state.ageCurrent + 1;
         document.getElementById('input-age-target').value = state.ageTarget;
     }
     saveLocal();
 }
 
+// グラフタップ時のリッチポップアップ表示
+function showChartPopup(age, total, principal) {
+    vibrate();
+    let popup = document.getElementById('chart-popup-element');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'chart-popup-element';
+        popup.className = 'chart-popup hidden';
+        document.body.appendChild(popup);
+    }
+    const profit = total - principal;
+    popup.innerHTML = `📊 【${age}才時点の予測】\n\n💰 予測総額: ¥${total.toLocaleString()}\n(元本: ¥${principal.toLocaleString()} / 運用益: +¥${profit.toLocaleString()})`;
+    
+    // 一度アニメーションをリセットして再表示
+    popup.classList.remove('hidden');
+    popup.style.animation = 'none';
+    void popup.offsetWidth; 
+    popup.style.animation = null;
+
+    clearTimeout(popup.timeoutId);
+    popup.timeoutId = setTimeout(() => popup.classList.add('hidden'), 3500);
+}
+
 // ==========================================================================
-// 🖼️ 9. 設定・ご褒美管理・GAS同期
+// 🎁 ご褒美の自由編集機能
+// ==========================================================================
+function addNewRewardField() {
+    vibrate();
+    state.stamps.push({ target: 5000000, reward: "新しいご褒美" });
+    saveLocal();
+    setTimeout(() => {
+        const container = document.getElementById('custom-rewards-list');
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+function removeRewardField(idx) {
+    vibrate();
+    if(confirm("このご褒美目標を削除しますか？")) {
+        state.stamps.splice(idx, 1);
+        saveLocal();
+    }
+}
+
+function saveCustomRewardsList() {
+    vibrate();
+    let newStamps = [];
+    const rows = document.querySelectorAll('.reward-edit-row');
+    rows.forEach(row => {
+        const tVal = parseInt(row.querySelector('.reward-target-input').value) || 0;
+        const rText = row.querySelector('.reward-text-input').value.trim() || "未設定";
+        newStamps.push({ target: tVal, reward: rText });
+    });
+    
+    newStamps.sort((a, b) => a.target - b.target);
+    state.stamps = newStamps;
+    saveLocal();
+    showToast("🎁 ご褒美リストを保存しました！");
+}
+
+// ==========================================================================
+// 🖼️ 設定管理・GAS同期
 // ==========================================================================
 function saveWelcomeImage(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(event) {
         try { localStorage.setItem('asset_welcome_img', event.target.result); document.getElementById('welcome-img-preview').src = event.target.result; document.getElementById('welcome-img-preview-container').classList.remove('hidden'); showToast("🖼️ お出迎え画像を登録しました！"); } 
-        catch(err) { alert("⚠️ 画像サイズが大きすぎます。小さめの画像を選んでください。"); }
+        catch(err) { alert("⚠️ 画像が大きすぎます。"); }
     };
     reader.readAsDataURL(file);
 }
 function clearWelcomeImage() { localStorage.removeItem('asset_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("画像を消去しました"); }
 function saveSplashTime(val) { state.splashTime = parseInt(val); saveLocal(); }
-function savePasswordOnly() { const p = document.getElementById('settings-password').value.trim(); if(p.length > 0) { localStorage.setItem('asset_password', p); showToast("🔑 パスワードを変更しました"); document.getElementById('settings-password').value = ""; } }
-
-function saveCustomRewardsList() {
-    vibrate();
-    state.stamps.forEach((s, idx) => {
-        const inputEl = document.getElementById(`reward-input-${idx}`);
-        if (inputEl) s.reward = inputEl.value.trim() || "ご褒美未設定";
-    });
-    saveLocal();
-    showToast("🎁 ご褒美のプレゼント内容を保存しました");
-}
 
 function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('asset_gas_url', GAS_URL); document.getElementById('sync-indicator').innerText = GAS_URL ? "☁ クラウド連携ON" : "スタンドアロン"; showToast("☁️ 連携URLを保存しました"); }
 function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
@@ -299,10 +292,10 @@ function triggerManualSync() {
     fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }).then(() => showToast("☁️ 資産データをバックアップしました！")).catch(() => showToast("⚠️ 同期エラーが発生しました"));
 }
 function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }); }
-function resetData() { if(!confirm("本当に全ての資産データをリセットしますか？ご褒美内容も初期化されます。")) return; localStorage.clear(); location.reload(); }
+function resetData() { if(!confirm("本当に全ての資産データをリセットしますか？")) return; localStorage.clear(); location.reload(); }
 
 // ==========================================================================
-// 🖌️ 10. メイン画面描画（複利エンジン・グラフ切替・FIRE月額計算）
+// 🖌️ メイン描画（複利エンジン・グラフ・FIRE・複利強調表示）
 // ==========================================================================
 function render() {
     document.getElementById('current-eval-display').innerText = "¥" + (state.evaluation || 0).toLocaleString();
@@ -340,7 +333,7 @@ function render() {
         const yearlyContribution = monthlyAmt * 12;
         currentPrincipal += yearlyContribution;
         currentEvaluation = (currentEvaluation + yearlyContribution) * (1 + r);
-        yearlyHistoryData.push({ yearIndex: i, age: ageCurrent + i, p: Math.round(currentPrincipal), e: Math.round(currentEvaluation) });
+        yearlyHistoryData.push({ age: ageCurrent + i, p: Math.round(currentPrincipal), e: Math.round(currentEvaluation) });
     }
 
     const finalEvaluationResult = yearlyHistoryData.length > 0 ? yearlyHistoryData[yearlyHistoryData.length - 1].e : currentEvaluation;
@@ -350,11 +343,22 @@ function render() {
     const realValueResult = Math.round(finalEvaluationResult / inflationCompoundFactor);
     document.getElementById('future-real-amount').innerText = "¥" + realValueResult.toLocaleString();
 
-    // 遊び心：FIRE（不労所得）月額計算 (運用総額 × 年利 ÷ 12ヶ月 ÷ 1万円)
+    // 🏝️ FIRE（不労所得）月額計算
     const fireMonthlyManYen = Math.floor((finalEvaluationResult * r) / 12 / 10000);
     document.getElementById('fire-monthly-amount').innerText = fireMonthlyManYen.toLocaleString();
 
-    // グラフの描画（モード切り替え対応）
+    // 🔥 複利効果の強調表示パネル
+    const totalProfit = finalEvaluationResult - currentPrincipal;
+    const multiplier = (finalEvaluationResult / (currentPrincipal || 1)).toFixed(1);
+    const highlightPanel = document.getElementById('profit-highlight');
+    if (currentPrincipal > 0 && totalProfit > 0) {
+        highlightPanel.innerHTML = `🔥 投資した元本 <strong>${currentPrincipal.toLocaleString()}円</strong> に対して<br>複利の力で <strong style="color:#ff4444; font-size:16px;">＋${totalProfit.toLocaleString()}円</strong> も増えました！<br><span style="font-size:11px; font-weight:bold; opacity:0.8;">(最終的に元本の約 ${multiplier}倍に膨らむ予測です)</span>`;
+        highlightPanel.classList.remove('hidden');
+    } else {
+        highlightPanel.classList.add('hidden');
+    }
+
+    // グラフの描画
     const chartContainer = document.getElementById('chart-container');
     chartContainer.innerHTML = '';
     const maxEvaluationValue = Math.max(finalEvaluationResult, 1); 
@@ -364,7 +368,6 @@ function render() {
 
     let displayData = yearlyHistoryData;
     if (!isAreaMode) {
-        // マイルストーン（棒）モード：5年ごと ＆ 最終年のみ抽出
         displayData = yearlyHistoryData.filter(d => (d.age % 5 === 0) || d.age === ageTarget);
     }
 
@@ -374,13 +377,14 @@ function render() {
         const profitHeightPercent = Math.max(0, totalHeightPercent - principalHeightPercent);
 
         chartContainer.innerHTML += `
-            <div class="chart-bar-container" title="${d.age}才時点\n総額: ¥${d.e.toLocaleString()}\n(元本: ¥${d.p.toLocaleString()})">
+            <div class="chart-bar-container" onclick="showChartPopup(${d.age}, ${d.e}, ${d.p})">
                 <div class="chart-bar-e" style="height: ${profitHeightPercent}%;"></div>
                 <div class="chart-bar-p" style="height: ${principalHeightPercent}%;"></div>
             </div>
         `;
     });
 
+    // スタンプカード
     const stampList = document.getElementById('stamp-list');
     stampList.innerHTML = '';
     if (!state.achievedTargets) state.achievedTargets = [];
@@ -400,14 +404,16 @@ function render() {
         `;
     });
 
+    // ご褒美の編集リスト生成
     const rewardMgrList = document.getElementById('custom-rewards-list');
     rewardMgrList.innerHTML = '';
     state.stamps.forEach((s, idx) => {
-        const targetLabelText = s.target === 0 ? "START" : `${s.target / 10000}万円`;
         rewardMgrList.innerHTML += `
             <div class="reward-edit-row">
-                <span class="reward-edit-label">${targetLabelText}:</span>
-                <input type="text" id="reward-input-${idx}" class="form-input flex-1" style="padding:6px 10px; font-size:12px;" value="${s.reward}">
+                <input type="number" class="form-input reward-target-input" value="${s.target}">
+                <span style="font-size:10px;">円</span>
+                <input type="text" class="form-input flex-1 reward-text-input" placeholder="ご褒美内容" value="${s.reward}">
+                <button onclick="removeRewardField(${idx})" style="background:none; border:none; color:#ff4444; font-size:16px; cursor:pointer;">✖</button>
             </div>
         `;
     });
