@@ -5,209 +5,227 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="icon.png">
-    <title>資産形成・複利管理</title>
+    <title>MY ASSET MANAGER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body class="theme-stylish">
 
-    <div id="splash" class="fixed-splash">
-        <div id="splash-default" class="splash-content">
-            <div class="splash-logo">💰</div>
-            <h1 class="splash-title">ASSET APP</h1>
+    <!-- 🔒 セキュリティ：PINロック画面（最前面） -->
+    <div id="lock-screen" class="fixed-overlay hidden">
+        <div class="lock-container">
+            <div class="lock-icon">🔒</div>
+            <h2 class="lock-title">パスワードを入力</h2>
+            <div class="pin-display" id="pin-display">
+                <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+            </div>
+            <div id="pin-error" class="pin-error"></div>
+            <div class="pin-pad">
+                <button class="pin-btn" onclick="inputPin('1')">1</button>
+                <button class="pin-btn" onclick="inputPin('2')">2</button>
+                <button class="pin-btn" onclick="inputPin('3')">3</button>
+                <button class="pin-btn" onclick="inputPin('4')">4</button>
+                <button class="pin-btn" onclick="inputPin('5')">5</button>
+                <button class="pin-btn" onclick="inputPin('6')">6</button>
+                <button class="pin-btn" onclick="inputPin('7')">7</button>
+                <button class="pin-btn" onclick="inputPin('8')">8</button>
+                <button class="pin-btn" onclick="inputPin('9')">9</button>
+                <button class="pin-btn btn-clear" onclick="clearPin()">C</button>
+                <button class="pin-btn" onclick="inputPin('0')">0</button>
+                <button class="pin-btn btn-forgot" onclick="showRecovery()">忘れた?</button>
+            </div>
         </div>
-        <img id="splash-custom" class="splash-custom-img hidden" src="" alt="Welcome">
     </div>
 
+    <!-- 🔒 セキュリティ：秘密の質問（復旧画面） -->
+    <div id="recovery-screen" class="fixed-overlay hidden">
+        <div class="modal-content">
+            <h2>🔐 パスワードの復旧</h2>
+            <p style="font-size:12px; margin-bottom:15px; opacity:0.8;">設定した秘密の質問に答えてください。</p>
+            <div class="form-group">
+                <label>秘密の質問</label>
+                <div id="recovery-question-text" style="font-weight:bold; font-size:16px; margin-bottom:10px;">未設定</div>
+            </div>
+            <div class="form-group">
+                <label>答え</label>
+                <input type="text" id="recovery-answer-input" class="form-input" placeholder="答えを入力">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-outline" onclick="hideRecovery()">戻る</button>
+                <button class="btn btn-primary" onclick="attemptRecovery()">解除する</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ⚙️ スプラッシュ画面 -->
+    <div id="splash" class="fixed-splash">
+        <div id="splash-default" class="splash-content">
+            <div class="splash-logo">📈</div>
+            <h1 class="splash-title">ASSET MANAGER</h1>
+        </div>
+    </div>
+
+    <!-- 背景レイヤー -->
     <div class="bg-layer" id="main-bg"></div>
 
+    <!-- ヘッダー -->
     <header class="header">
-        <div class="header-title">💰 ASSET MANAGEMENT</div>
-        <div class="header-status">
-            <span class="currency-display" id="sync-indicator">スタンドアロン</span>
-        </div>
+        <div class="header-title">MY ASSET</div>
     </header>
 
+    <!-- メインコンテンツ -->
     <main class="main-container">
 
-        <section id="view-home" class="view active space-y">
-            <div class="asset-display-panel text-center">
-                <p class="asset-label">📍 現在のリアル総資産額</p>
-                <div id="current-eval-display" class="asset-value blur-click" onclick="toggleBlur(this)">¥0</div>
-                <p class="blur-hint-text">※数字をタップするとモザイク表示が切り替わります</p>
-                
-                <button onclick="updateEvalPrompt()" class="btn btn-primary w-full" style="margin-top: 20px;">
-                    📈 最新の資産残高を記録する
-                </button>
+        <!-- 📈 1. 証券口座メイン画面 -->
+        <section id="view-securities" class="view active">
+            <div class="total-asset-panel">
+                <div class="total-label">証券口座 評価額</div>
+                <div class="total-value">¥ <span id="display-total-securities">0</span></div>
+                <div class="total-diff" id="display-diff">前日比: --</div>
             </div>
-
-            <div id="memo-display-panel" class="panel memo-panel hidden">
-                <div class="memo-title">✏️ 直近の資産更新メモ</div>
-                <p id="latest-memo-text" class="memo-content"></p>
-            </div>
-        </section>
-
-        <section id="view-simulator" class="view space-y">
-            <div class="simulator-hero-banner text-center">
-                <p class="sim-banner-label">目標年齢に達した時の予測資産額</p>
-                <div id="future-amount" class="sim-banner-value blur-click" onclick="toggleBlur(this)">¥0</div>
-                <p class="sim-banner-sub">実質価値 (インフレ考慮後): <strong id="future-real-amount">¥0</strong></p>
-                
-                <div class="fire-income-panel">
-                    🏝️ 予測不労所得: 毎月 約 <strong id="fire-monthly-amount" style="font-size:16px;">0</strong> 万円
-                </div>
-            </div>
-
-            <div id="profit-highlight" class="profit-highlight text-center"></div>
 
             <div class="panel">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 class="panel-title" style="margin:0;">📈 将来の資産推移予測</h3>
-                    <button onclick="toggleGraphMode()" class="btn btn-outline" style="padding: 6px 12px; font-size: 10px;" id="btn-graph-toggle">🔄 モード切替</button>
-                </div>
-                <div id="chart-container" class="chart-flex-box"></div>
-                <div class="chart-labels">
-                    <span id="graph-label-current">現在</span>
-                    <span id="graph-label-target">目標</span>
+                <h2 class="panel-title">📝 今日の評価額を記録</h2>
+                <div class="form-row">
+                    <input type="number" id="input-securities-amount" class="form-input flex-1" placeholder="現在の評価額 (円)">
+                    <button class="btn btn-primary" onclick="recordSecurities()">記録</button>
                 </div>
             </div>
 
-            <div class="panel space-y">
-                <h3 class="panel-title">⚙️ 条件を細かくシミュレーションする</h3>
-                <div class="form-row">
-                    <div class="flex-1">
-                        <label class="form-sub-label">現在の年齢 (才)</label>
-                        <input type="number" id="input-age-current" class="form-input" value="30" onchange="saveSimulationConditions()">
-                    </div>
-                    <div class="flex-1">
-                        <label class="form-sub-label">目標の年齢 (才)</label>
-                        <input type="number" id="input-age-target" class="form-input" value="65" onchange="saveSimulationConditions()">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-sub-label">💡 すでにNISA等で運用中の金額 (円)</label>
-                    <input type="number" id="input-initial" class="form-input" placeholder="例: 1500000" onchange="saveSimulationConditions()">
-                </div>
-                
-                <div class="form-group text-center">
-                    <label class="form-sub-label text-left">これから毎月積み立てる金額 (円)</label>
-                    <div class="counter-input" style="justify-content: space-between;">
-                        <button onclick="changeMonthly(-10000)" class="btn-quick-adjust">-1万</button>
-                        <input type="number" id="input-monthly" class="form-input text-center" value="30000" onchange="saveSimulationConditions()">
-                        <button onclick="changeMonthly(10000)" class="btn-quick-adjust">+1万</button>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="flex-1">
-                        <label class="form-sub-label">想定利回り (年%)</label>
-                        <input type="number" id="input-rate" class="form-input" value="5.0" step="0.1" onchange="saveSimulationConditions()">
-                    </div>
-                    <div class="flex-1">
-                        <label class="form-sub-label">インフレ率 (%)</label>
-                        <input type="number" id="input-inflation" class="form-input" value="2.0" step="0.1" onchange="saveSimulationConditions()">
-                    </div>
+            <div class="panel">
+                <h2 class="panel-title">📊 評価額の推移 (履歴)</h2>
+                <div id="securities-history-list" class="history-list">
+                    <!-- 履歴がここに入ります -->
                 </div>
             </div>
         </section>
 
-        <section id="view-rewards" class="view space-y">
-            <div class="panel-intro">
-                <h2 class="panel-title">💮 ご褒美マイルストーン</h2>
-                <p style="font-size:12px; margin-bottom:15px; opacity:0.8;">資産総額が目標を超えると自動でスタンプが押され、ご褒美が解放されます！</p>
+        <!-- ✉️ 2. 封筒貯金画面 -->
+        <section id="view-envelopes" class="view">
+            <div class="button-group" style="margin-bottom: 20px;">
+                <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
             </div>
             
-            <div id="stamp-list" class="grid-container"></div>
-
-            <div class="panel" style="margin-top: 20px;">
-                <h2 class="panel-title">✏️ 目標金額とご褒美のカスタマイズ</h2>
-                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">目標金額（円）とプレゼントを自由に設定できます。</p>
-                <div id="custom-rewards-list" class="rewards-edit-container"></div>
-                
-                <button onclick="addNewRewardField()" class="btn btn-outline w-full" style="margin-top:10px; font-size:12px; padding: 10px;">＋ 新しい目標を追加する</button>
-                <button onclick="saveCustomRewardsList()" class="btn btn-primary w-full" style="margin-top:15px;">🎁 リストを保存する</button>
+            <div id="envelopes-grid" class="envelopes-grid">
+                <!-- 封筒カードがここに入ります -->
             </div>
         </section>
 
+        <!-- ⚙️ 3. 設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
-                <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
+                <h2 class="panel-title">🎨 アプリのテーマ</h2>
                 <select id="theme-selector" class="form-input" onchange="changeAppTheme(this.value)">
-                    <option value="theme-stylish">🤍 スタイリッシュ (すりガラス透明感)</option>
-                    <option value="theme-cute">🌸 ポップ＆キュート (パステルふんわり)</option>
-                    <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン発光)</option>
+                    <option value="theme-stylish">🤍 スタイリッシュ (すりガラス)</option>
+                    <option value="theme-cute">🌸 ポップ＆キュート (パステル)</option>
+                    <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン)</option>
                 </select>
             </div>
 
-            <div class="panel" id="color-custom-panel">
-                <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
-                <div class="color-picker-grid">
-                    <div class="color-picker-row">
-                        <label>全体の背景色</label>
-                        <input type="color" id="custom-color-bg" onchange="updateCustomColor('bg', this.value)">
-                    </div>
-                    <div class="color-picker-row">
-                        <label>パネルの背景色</label>
-                        <input type="color" id="custom-color-panel" onchange="updateCustomColor('panel', this.value)">
-                    </div>
-                    <div class="color-picker-row">
-                        <label>アクセント（ボタン等）</label>
-                        <input type="color" id="custom-color-accent" onchange="updateCustomColor('accent', this.value)">
-                    </div>
-                </div>
-                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期化</button>
+            <div class="panel" style="border: 2px solid #ff4444;">
+                <h2 class="panel-title">🔒 アプリロック設定</h2>
+                <p style="font-size:11px; opacity:0.8; margin-bottom:10px;">アプリ起動時に4桁の暗証番号を要求します。</p>
+                <div id="lock-status-display" style="margin-bottom:10px; font-weight:bold;">状態: <span id="lock-status-text">未設定</span></div>
+                <button class="btn btn-outline w-full" id="btn-setup-lock" onclick="openLockSetupModal()">ロックを設定・変更する</button>
+                <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()" style="margin-top:10px;">ロックを解除（オフにする）</button>
             </div>
 
-            <div class="panel">
-                <h2 class="panel-title">🖼️ お出迎え画面・タイトル設定</h2>
-                <div class="form-group">
-                    <label>お出迎え画像を選ぶ</label>
-                    <input type="file" id="settings-welcome-img" accept="image/*" class="form-input file-input" onchange="saveWelcomeImage(event)">
-                </div>
-                <div class="form-group">
-                    <label>表示時間</label>
-                    <select id="settings-splash-time" class="form-input" onchange="saveSplashTime(this.value)">
-                        <option value="500">サクッと (0.5秒)</option>
-                        <option value="1200" selected>普通 (1.2秒)</option>
-                        <option value="2500">じっくり (2.5秒)</option>
-                    </select>
-                </div>
-                <div id="welcome-img-preview-container" class="hidden text-center">
-                    <img id="welcome-img-preview" class="img-preview" src="">
-                    <button onclick="clearWelcomeImage()" class="btn-text-danger">画像を消去する</button>
-                </div>
-            </div>
-
-            <div class="panel">
-                <h2 class="panel-title">🛠️ のぞき見防止セキュリティ</h2>
-                <label class="flex-row-label">
-                    <input type="checkbox" id="settings-peeping" onchange="applyPeepingFilterToggle(this.checked)">
-                    <span>アプリ起動時は常に金額をモザイク表示にする</span>
+            <div class="panel" style="border: 2px solid var(--accent-color);">
+                <h2 class="panel-title">💾 究極のデータバックアップ</h2>
+                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">全データを「ファイル」として安全に書き出します。新機能追加時も自動穴埋めで安全に復元できます！</p>
+                <button onclick="exportData()" class="btn btn-primary w-full" style="margin-bottom:10px;">📥 データを書き出す (保存)</button>
+                <label class="btn btn-outline w-full text-center" style="display:block; cursor:pointer;">
+                    📤 ファイルからデータを復元する
+                    <input type="file" accept=".json" class="hidden" onchange="importData(event)">
                 </label>
-            </div>
-
-            <div class="panel">
-                <h2 class="panel-title">☁️ クラウド同期・バックアップ (GAS)</h2>
-                <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのウェブアプリURLを貼り付け">
-                <div class="button-group" style="margin-top:10px;">
-                    <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
-                    <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動バックアップ</button>
-                </div>
-                <label class="flex-row-label">
-                    <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)"> 操作時に自動バックアップを行う
-                </label>
-                <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
-                <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
             </div>
         </section>
 
     </main>
 
+    <!-- ✉️ 封筒作成・編集モーダル -->
+    <div id="modal-envelope" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-envelope-title">新しい封筒</h2>
+            <input type="hidden" id="envelope-edit-id">
+            <div class="form-group">
+                <label>アイコン (絵文字)</label>
+                <input type="text" id="env-input-emoji" class="form-input" placeholder="例: 🚗, ✈️, 🎁" maxlength="2" value="💰">
+            </div>
+            <div class="form-group">
+                <label>封筒の名前</label>
+                <input type="text" id="env-input-name" class="form-input" placeholder="例: 車検代, 旅行用">
+            </div>
+            <div class="form-group">
+                <label>目標金額 (円)</label>
+                <input type="number" id="env-input-target" class="form-input" placeholder="例: 100000">
+            </div>
+            <div class="form-group">
+                <label>テーマカラー</label>
+                <select id="env-input-color" class="form-input">
+                    <option value="#ff4b4b">🍎 レッド</option>
+                    <option value="#4b7bff" selected>💧 ブルー</option>
+                    <option value="#32cd32">🍏 グリーン</option>
+                    <option value="#ffb700">🍋 イエロー</option>
+                    <option value="#a84bff">🍇 パープル</option>
+                    <option value="#ff69b4">🍑 ピンク</option>
+                </select>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-outline" onclick="closeModal('modal-envelope')">キャンセル</button>
+                <button class="btn btn-primary" onclick="saveEnvelope()">保存</button>
+            </div>
+            <button class="btn btn-danger w-full hidden" id="env-btn-delete" style="margin-top:10px;" onclick="deleteEnvelope()">🗑️ この封筒を捨てる</button>
+        </div>
+    </div>
+
+    <!-- 💰 封筒 出し入れモーダル -->
+    <div id="modal-envelope-money" class="modal hidden">
+        <div class="modal-content">
+            <h2><span id="em-emoji"></span> <span id="em-name"></span></h2>
+            <p style="font-size:12px; margin-bottom:15px;">現在の金額: <span id="em-current" style="font-weight:bold;">0</span>円</p>
+            <input type="hidden" id="em-id">
+            <div class="form-group">
+                <input type="number" id="em-amount" class="form-input" placeholder="金額を入力 (円)">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-outline" style="border-color:#ff4b4b; color:#ff4b4b;" onclick="updateEnvelopeMoney('sub')">ー 出す</button>
+                <button class="btn btn-primary" onclick="updateEnvelopeMoney('add')">＋ 入れる</button>
+            </div>
+            <button class="btn btn-outline w-full" style="margin-top:15px;" onclick="closeModal('modal-envelope-money')">閉じる</button>
+        </div>
+    </div>
+
+    <!-- 🔒 ロック設定モーダル -->
+    <div id="modal-lock-setup" class="modal hidden">
+        <div class="modal-content">
+            <h2>ロックの設定</h2>
+            <div class="form-group">
+                <label>4桁の暗証番号 (PIN)</label>
+                <input type="number" id="setup-pin" class="form-input" placeholder="例: 1234" maxlength="4" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+            </div>
+            <div class="form-group">
+                <label>秘密の質問（忘れた時の復旧用）</label>
+                <select id="setup-question" class="form-input" style="margin-bottom:8px;">
+                    <option value="最初に飼ったペットの名前は？">最初に飼ったペットの名前は？</option>
+                    <option value="母親の旧姓は？">母親の旧姓は？</option>
+                    <option value="子供の頃の親友の名前は？">子供の頃の親友の名前は？</option>
+                    <option value="好きだった給食のメニューは？">好きだった給食のメニューは？</option>
+                </select>
+                <input type="text" id="setup-answer" class="form-input" placeholder="答えを入力">
+            </div>
+            <div class="button-group">
+                <button class="btn btn-outline" onclick="closeModal('modal-lock-setup')">キャンセル</button>
+                <button class="btn btn-primary" onclick="saveLockSetup()">設定する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 下部ナビゲーション -->
     <nav class="bottom-nav">
-        <button class="nav-btn active" data-target="view-home"><span class="icon">🏠</span><br><span class="label">ホーム</span></button>
-        <button class="nav-btn" data-target="view-simulator"><span class="icon">📊</span><br><span class="label">計算機</span></button>
-        <button class="nav-btn" data-target="view-rewards"><span class="icon">🎁</span><br><span class="label">ご褒美</span></button>
-        <button class="nav-btn" data-target="view-settings"><span class="icon">🛠️</span><br><span class="label">設定</span></button>
+        <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
+        <button class="nav-btn" data-target="view-envelopes"><span class="icon">✉️</span><br><span class="label">封筒貯金</span></button>
+        <button class="nav-btn" data-target="view-settings"><span class="icon">⚙️</span><br><span class="label">設定</span></button>
     </nav>
 
     <script src="app.js"></script>
