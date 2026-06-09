@@ -8,9 +8,11 @@
     <title>MY ASSET MANAGER</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="theme-stylish">
 
+    <!-- 🔒 セキュリティ：PINロック画面 -->
     <div id="lock-screen" class="fixed-overlay hidden">
         <div class="lock-container">
             <div class="lock-icon">🔒</div>
@@ -36,6 +38,7 @@
         </div>
     </div>
 
+    <!-- 🔒 セキュリティ：秘密の質問 -->
     <div id="recovery-screen" class="fixed-overlay hidden">
         <div class="modal-content">
             <h2>🔐 パスワードの復旧</h2>
@@ -55,6 +58,7 @@
         </div>
     </div>
     
+    <!-- ⚙️ スプラッシュ画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">📈</div>
@@ -62,14 +66,18 @@
         </div>
     </div>
 
+    <!-- 背景レイヤー -->
     <div class="bg-layer" id="main-bg"></div>
 
+    <!-- ヘッダー -->
     <header class="header">
         <div class="header-title">MY ASSET</div>
     </header>
 
+    <!-- メインコンテンツ -->
     <main class="main-container">
 
+        <!-- 📈 1. 証券口座メイン画面 -->
         <section id="view-securities" class="view active">
             <div class="total-asset-panel">
                 <div class="total-label">証券口座 評価額</div>
@@ -91,6 +99,79 @@
             </div>
         </section>
 
+        <!-- 💰 2. 収支・家計簿画面（復活！） -->
+        <section id="view-cashflow" class="view space-y">
+            <!-- 今月のサマリー -->
+            <div class="summary-card">
+                <div class="summary-item">
+                    <span class="lbl">今月の収入</span>
+                    <span class="val income" id="month-income">¥0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="lbl">今月の支出</span>
+                    <span class="val expense" id="month-expense">¥0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="lbl">今月の収支</span>
+                    <span class="val" id="month-balance">¥0</span>
+                </div>
+            </div>
+
+            <!-- 入力パネル -->
+            <div class="panel">
+                <h2 class="panel-title">💸 収支の記録</h2>
+                <div class="form-row" style="margin-bottom:10px;">
+                    <select id="cf-type" class="form-input" style="flex:0.7;" onchange="updateCategorySelector()">
+                        <option value="expense">支出</option>
+                        <option value="income">収入</option>
+                    </select>
+                    <select id="cf-category" class="form-input flex-1"></select>
+                </div>
+                <div class="form-row">
+                    <input type="number" id="cf-amount" class="form-input flex-1" placeholder="金額 (円)">
+                    <input type="text" id="cf-memo" class="form-input flex-1" placeholder="メモ（空欄OK）">
+                    <button class="btn btn-primary" onclick="recordCashflow()">追加</button>
+                </div>
+            </div>
+
+            <!-- グラフパネル -->
+            <div class="panel text-center">
+                <h2 class="panel-title">📊 支出の内訳グラフ</h2>
+                <div style="max-width: 200px; margin: 0 auto;">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 履歴リスト -->
+            <div class="panel">
+                <h2 class="panel-title">📜 最近の収支履歴</h2>
+                <div id="cashflow-history-list" class="history-list"></div>
+            </div>
+
+            <!-- 固定費管理セクション -->
+            <div class="panel">
+                <h2 class="panel-title">🔄 毎月の固定費管理</h2>
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <input type="text" id="fixed-name" class="form-input flex-1" placeholder="例: 家賃、サブスク">
+                    <input type="number" id="fixed-amount" class="form-input flex-1" placeholder="金額 (円)">
+                    <button class="btn btn-outline" onclick="addFixedCost()">登録</button>
+                </div>
+                <div id="fixed-costs-list" class="history-list"></div>
+            </div>
+
+            <!-- 表形式（年間・月間集計表） -->
+            <div class="panel" style="overflow-x: auto;">
+                <h2 class="panel-title">📅 月別集計一覧表</h2>
+                <table class="report-table">
+                    <thead>
+                        <tr><th>年月</th><th>収入</th><th>支出</th><th>残高</th></tr>
+                    </thead>
+                    <tbody id="report-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ✉️ 3. 封筒貯金画面 -->
         <section id="view-envelopes" class="view">
             <div class="button-group" style="margin-bottom: 20px;">
                 <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
@@ -98,15 +179,16 @@
             <div id="envelopes-grid" class="envelopes-grid"></div>
         </section>
 
+        <!-- 📖 4. 25日振り返りアーカイブ（思い出図鑑） -->
         <section id="view-archive" class="view">
             <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
                 <h2 class="panel-title" style="text-align: center; font-size: 16px;">📅 月末振り返り図鑑</h2>
                 <p style="font-size: 11px; text-align: center; opacity: 0.8; margin: 0;">毎月25日に自動生成される、あなたの資産の成長記録です。</p>
             </div>
-            <div id="archive-list" class="space-y">
-                </div>
+            <div id="archive-list" class="space-y"></div>
         </section>
 
+        <!-- ⚙️ 5. 設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ</h2>
@@ -121,7 +203,7 @@
                 <h2 class="panel-title">🔒 アプリロック設定</h2>
                 <div id="lock-status-display" style="margin-bottom:10px; font-weight:bold;">状態: <span id="lock-status-text">未設定</span></div>
                 <button class="btn btn-outline w-full" id="btn-setup-lock" onclick="openLockSetupModal()">ロックを設定・変更する</button>
-                <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()" style="margin-top:10px;">ロックを解除（オフにする）</button>
+                <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()">ロックを解除（オフにする）</button>
             </div>
 
             <div class="panel" style="border: 2px solid var(--accent-color);">
@@ -135,18 +217,18 @@
 
             <div class="panel" style="background: rgba(0,0,0,0.05); border: 1px dashed #aaa;">
                 <h2 class="panel-title">🛠️ デバッグ・動作確認用</h2>
-                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">通常は25日にしか出ないポップアップを、今すぐテスト起動できます。</p>
                 <button onclick="trigger25thReport(true)" class="btn btn-outline w-full" style="font-size:12px; padding:8px;">🚨 今すぐ25日振り返りをテスト実行</button>
             </div>
         </section>
 
     </main>
 
+    <!-- 🌟 25日振り返りポップアップ -->
     <div id="modal-report-25th" class="modal hidden" style="z-index: 4000;">
         <div class="modal-content" style="width: 340px; max-height: 85vh; overflow-y: auto; border: 3px solid #ffd700;">
             <div style="font-size: 40px; margin-bottom: 5px;">🎉</div>
             <h2 style="margin-bottom: 5px;">25日 月末振り返りレポート！</h2>
-            <div id="report-date-title" style="font-size: 12px; font-weight: bold; opacity: 0.6; margin-bottom: 20px;">2024/--/25</div>
+            <div id="report-date-title" style="font-size: 12px; font-weight: bold; opacity: 0.6; margin-bottom: 20px;">2026/--/25</div>
             
             <div class="report-stat-block">
                 <div class="report-stat-item">
@@ -160,11 +242,11 @@
             </div>
 
             <div id="report-comment" class="report-comment"></div>
-
             <button class="btn btn-primary w-full" onclick="closeModal('modal-report-25th')" style="margin-top: 15px;">素晴らしい！(閉じる)</button>
         </div>
     </div>
 
+    <!-- ✉️ 封筒作成・編集モーダル -->
     <div id="modal-envelope" class="modal hidden">
         <div class="modal-content">
             <h2 id="modal-envelope-title">新しい封筒</h2>
@@ -200,6 +282,7 @@
         </div>
     </div>
 
+    <!-- 💰 封筒 出し入れモーダル -->
     <div id="modal-envelope-money" class="modal hidden">
         <div class="modal-content">
             <h2><span id="em-emoji"></span> <span id="em-name"></span></h2>
@@ -216,6 +299,7 @@
         </div>
     </div>
 
+    <!-- 🔒 ロック設定モーダル -->
     <div id="modal-lock-setup" class="modal hidden">
         <div class="modal-content">
             <h2>ロックの設定</h2>
@@ -240,8 +324,10 @@
         </div>
     </div>
 
+    <!-- 📱 下部ナビゲーション（5タブ化！） -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
+        <button class="nav-btn" data-target="view-cashflow"><span class="icon">💸</span><br><span class="label">収支</span></button>
         <button class="nav-btn" data-target="view-envelopes"><span class="icon">✉️</span><br><span class="label">封筒貯金</span></button>
         <button class="nav-btn" data-target="view-archive"><span class="icon">📖</span><br><span class="label">記録</span></button>
         <button class="nav-btn" data-target="view-settings"><span class="icon">⚙️</span><br><span class="label">設定</span></button>

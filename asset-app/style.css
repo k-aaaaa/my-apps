@@ -1,6 +1,3 @@
-/* ==========================================================================
-   🎨 グローバル CSS 変数
-   ========================================================================== */
 :root {
     --bg-color: #f4f5f7;
     --panel-bg: rgba(255, 255, 255, 0.6);
@@ -28,6 +25,7 @@ body {
 .space-y > * { margin-bottom: 20px; }
 .panel { padding: 20px; border-radius: 16px; margin-bottom: 20px; box-sizing: border-box; background: var(--panel-bg); backdrop-filter: blur(20px); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 .panel-title { margin: 0 0 15px 0; font-size: 15px; font-weight: bold; opacity: 0.9; }
+.text-center { text-align: center; }
 
 .form-group { margin-bottom: 15px; text-align: left; }
 .form-group label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 6px; opacity: 0.8; }
@@ -47,7 +45,7 @@ body {
 .btn-danger { background: transparent; border: 2px solid #ff4444; color: #ff4444; }
 .hidden { display: none !important; }
 
-/* 📈 証券口座メイン表示 */
+/* 📈 証券表示 */
 .total-asset-panel { background: linear-gradient(135deg, var(--accent-color), #555); color: #fff; padding: 30px 20px; border-radius: 20px; text-align: center; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
 .total-label { font-size: 12px; font-weight: bold; opacity: 0.8; margin-bottom: 5px; }
 .total-value { font-size: 36px; font-weight: 900; letter-spacing: 1px; }
@@ -55,12 +53,27 @@ body {
 .diff-up { color: #a8ffb2; }
 .diff-down { color: #ffb2b2; }
 
-/* 履歴リスト */
+/* 📜 共通履歴リスト */
 .history-list { display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
 .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(0,0,0,0.03); border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }
 .history-date { font-size: 12px; opacity: 0.6; font-weight: bold; }
 .history-amount { font-size: 16px; font-weight: 900; }
+.history-amount.income { color: #2e7d32; }
+.history-amount.expense { color: #c62828; }
 .btn-delete-history { background: transparent; border: none; color: #ff4444; font-size: 16px; cursor: pointer; padding: 5px; }
+
+/* 💸 収支サマリーカード */
+.summary-card { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--panel-bg); border-radius: 16px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+.summary-item { text-align: center; display: flex; flex-direction: column; }
+.summary-item .lbl { font-size: 10px; opacity: 0.6; font-weight: bold; margin-bottom: 4px; }
+.summary-item .val { font-size: 14px; font-weight: 900; }
+.summary-item .val.income { color: #2e7d32; }
+.summary-item .val.expense { color: #c62828; }
+
+/* 📅 集計表テーブル */
+.report-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+.report-table th, .report-table td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.08); font-weight: bold; }
+.report-table th { background: rgba(0,0,0,0.03); opacity: 0.8; }
 
 /* ✉️ 封筒貯金 UI */
 .envelopes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding-bottom: 20px; }
@@ -75,7 +88,7 @@ body {
 .env-progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 .env-edit-btn { position: absolute; top: 12px; right: 10px; background: rgba(255,255,255,0.3); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 12px; cursor: pointer; z-index: 10;}
 
-/* 📅 振り返り図鑑（アーカイブ）カード */
+/* 📖 振り返り図鑑カード */
 .archive-card { background: var(--panel-bg); border-radius: 16px; padding: 20px; border-left: 5px solid #ffd700; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
 .archive-date { font-size: 16px; font-weight: 900; margin-bottom: 12px; display: flex; justify-content: space-between; }
 .archive-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -83,7 +96,7 @@ body {
 .archive-stat-lbl { font-size: 10px; opacity: 0.6; font-weight: bold; margin-bottom: 3px; }
 .archive-stat-val { font-size: 15px; font-weight: 900; }
 
-/* 25日レポートポップアップ内の装飾 */
+/* 25日ポップアップ装飾 */
 .report-stat-block { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 15px 0; }
 .report-stat-item { background: rgba(0,0,0,0.04); padding: 12px 5px; border-radius: 12px; }
 .report-stat-label { font-size: 10px; opacity: 0.7; font-weight: bold; margin-bottom: 5px; }
@@ -95,7 +108,7 @@ body {
 .modal-content { background: var(--bg-color); padding: 25px; border-radius: 20px; text-align: center; max-width: 85%; width: 320px; color: var(--text-color); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
 .modal-content h2 { margin-top: 0; font-size: 18px; margin-bottom: 20px; }
 
-/* 🔒 PINロック画面 */
+/* 🔒 PINロック */
 .fixed-overlay { position: fixed; inset: 0; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(20, 20, 25, 0.95); backdrop-filter: blur(15px); color: white; }
 .lock-container { text-align: center; width: 100%; max-width: 300px; }
 .lock-icon { font-size: 50px; margin-bottom: 10px; }
