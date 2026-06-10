@@ -50,8 +50,8 @@ function vibrate() {
 const defaultState = {
     securities: { history: [] },
     envelopes: [],
-    rewards: [],           // 目標リスト [{id, amount, name, achieved, achievedDate, shown}]
-    reports: [],           // 月末振り返り
+    rewards: [],
+    reports: [],
     lastReportMonth: "",
     simulation: {
         startAge: 25,
@@ -74,7 +74,8 @@ const defaultState = {
 let state = null;
 let currentInputPin = "";
 let simChartInstance = null;
-let pendingAchievements = []; // 表示待ちの達成
+let pendingAchievements = [];
+let simData = { labels: [], principal: [], interest: [], total: [] };
 
 // ==========================================================================
 // 🚀 起動処理
@@ -113,7 +114,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateUI();
     updateSimulation();
 
-    // シミュレーション入力のイベントリスナー
     ['sim-start-age', 'sim-end-age', 'sim-annual-rate', 'sim-inflation-rate'].forEach(id => {
         document.getElementById(id).addEventListener('input', updateSimulation);
     });
@@ -141,8 +141,6 @@ function recordSecurities() {
     saveLocal();
     document.getElementById('input-securities-amount').value = "";
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-
-    // 達成チェック
     checkAchievements();
 }
 
@@ -229,68 +227,107 @@ function updateSimulation() {
     const annualRate = parseFloat(document.getElementById('sim-annual-rate').value) || 0;
     const inflationRate = parseFloat(document.getElementById('sim-inflation-rate').value) || 0;
 
-    // ステートに保存
     state.simulation.startAge = startAge;
     state.simulation.endAge = endAge;
     state.simulation.annualRate = annualRate;
     state.simulation.inflationRate = inflationRate;
 
-    // 実質利回り計算
     const realRate = annualRate - inflationRate;
     document.getElementById('sim-real-rate').innerText = realRate.toFixed(1);
 
-    // グラフ用データ生成
     const years = endAge - startAge;
     const labels = [];
-    const data = [];
-    let total = 0;
+    const principalData = [];
+    const interestData = [];
+    const totalData = [];
+
+    let totalAmount = 0;
+    let totalPrincipal = 0;
     const monthlyRate = realRate / 100 / 12;
 
     for (let y = 0; y <= years; y++) {
         labels.push(`${startAge + y}歳`);
-        data.push(Math.round(total));
+        principalData.push(Math.round(totalPrincipal));
+        interestData.push(Math.round(totalAmount - totalPrincipal));
+        totalData.push(Math.round(totalAmount));
+
         for (let m = 0; m < 12; m++) {
-            total += monthly;
-            total *= (1 + monthlyRate);
+            totalPrincipal += monthly;
+            totalAmount += monthly;
+            totalAmount *= (1 + monthlyRate);
         }
     }
 
-    // 最終金額表示
-    document.getElementById('sim-end-age-label').innerText = endAge;
-    document.getElementById('sim-final-amount').innerText = Math.round(total).toLocaleString();
+    simData = { labels, principal: principalData, interest: interestData, total: totalData };
 
-    // グラフ描画
+    const slider = document.getElementById('sim-slider');
+    slider.max = years;
+    slider.value = years;
+    updateSliderDisplay(years);
+
+    document.getElementById('sim-end-age-label').innerText = endAge;
+    document.getElementById('sim-final-amount').innerText = Math.round(totalAmount).toLocaleString();
+
+    renderSimChart();
+}
+
+function renderSimChart() {
     const ctx = document.getElementById('simChart');
     if (simChartInstance) simChartInstance.destroy();
 
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#1d1d1f';
+
     simChartInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: labels,
-            datasets: [{
-                label: '資産額',
-                data: data,
-                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#1d1d1f',
-                backgroundColor: 'rgba(100, 100, 100, 0.1)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0
-            }]
+            labels: simData.labels,
+            datasets: [
+                {
+                    label: '元本',
+                    data: simData.principal,
+                    backgroundColor: 'rgba(150, 150, 150, 0.6)',
+                    borderColor: 'rgba(150, 150, 150, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: '運用益',
+                    data: simData.interest,
+                    backgroundColor: accentColor + '99',
+                    borderColor: accentColor,
+                    borderWidth: 1
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        font: { size: 10 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            return context.dataset.label + ': ¥' + context.raw.toLocaleString();
+                        }
+                    }
+                }
             },
             scales: {
                 x: {
+                    stacked: true,
                     ticks: {
                         maxTicksLimit: 6,
                         font: { size: 10 }
                     }
                 },
                 y: {
+                    stacked: true,
                     ticks: {
                         callback: (val) => '¥' + (val / 10000).toFixed(0) + '万',
                         font: { size: 10 }
@@ -299,6 +336,24 @@ function updateSimulation() {
             }
         }
     });
+}
+
+function updateSliderDisplay(index) {
+    const idx = parseInt(index);
+    const age = simData.labels[idx] || '--';
+    const principal = simData.principal[idx] || 0;
+    const interest = simData.interest[idx] || 0;
+    const total = simData.total[idx] || 0;
+
+    document.getElementById('sim-slider-age').innerText = age;
+    document.getElementById('sim-slider-principal').innerText = '¥' + principal.toLocaleString();
+    document.getElementById('sim-slider-interest').innerText = '¥' + interest.toLocaleString();
+    document.getElementById('sim-slider-total').innerText = '¥' + total.toLocaleString();
+}
+
+function onSimSliderChange(value) {
+    vibrate();
+    updateSliderDisplay(value);
 }
 
 // ==========================================================================
@@ -464,8 +519,6 @@ function addRewardTarget() {
     saveLocal();
     document.getElementById('reward-target-amount').value = "";
     document.getElementById('reward-target-name').value = "";
-
-    // 追加直後に達成チェック
     checkAchievements();
 }
 
@@ -487,7 +540,6 @@ function checkAchievements() {
         if (!reward.achieved && currentAmount >= reward.amount) {
             reward.achieved = true;
             reward.achievedDate = today;
-            // まだ表示していないものをキューに追加
             if (!reward.shown) {
                 pendingAchievements.push(reward);
             }
@@ -514,7 +566,6 @@ function showNextAchievement() {
 function closeAchievementModal() {
     vibrate();
     document.getElementById('modal-achievement').classList.add('hidden');
-    // 次の達成があれば表示
     setTimeout(showNextAchievement, 500);
 }
 
@@ -885,7 +936,6 @@ function changeAppTheme(themeName) {
     state.appTheme = themeName;
     applyCurrentThemeAndColors();
     saveLocal();
-    // テーマ変更時にグラフを再描画
     if (simChartInstance) {
         updateSimulation();
     }

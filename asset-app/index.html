@@ -152,6 +152,29 @@
                 <div class="sim-chart-container">
                     <canvas id="simChart"></canvas>
                 </div>
+
+                <!-- スライダーで年齢ごとの金額確認 -->
+                <div class="sim-slider-section">
+                    <input type="range" id="sim-slider" class="sim-slider" min="0" max="40" value="40" oninput="onSimSliderChange(this.value)">
+                    <div class="sim-slider-info">
+                        <div class="sim-slider-age-label"><span id="sim-slider-age">65歳</span>時点</div>
+                        <div class="sim-slider-details">
+                            <div class="sim-detail-item">
+                                <span class="sim-detail-label">元本</span>
+                                <span class="sim-detail-value" id="sim-slider-principal">¥0</span>
+                            </div>
+                            <div class="sim-detail-item">
+                                <span class="sim-detail-label">運用益</span>
+                                <span class="sim-detail-value accent" id="sim-slider-interest">¥0</span>
+                            </div>
+                            <div class="sim-detail-item">
+                                <span class="sim-detail-label">合計</span>
+                                <span class="sim-detail-value total" id="sim-slider-total">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="sim-result">
                     <span id="sim-end-age-label">65</span>歳時点の資産予測：<strong>¥<span id="sim-final-amount">0</span></strong>
                 </div>
