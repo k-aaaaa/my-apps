@@ -1,3 +1,4 @@
+<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -99,75 +100,61 @@
             </div>
         </section>
 
-        <!-- 💰 2. 収支・家計簿画面（復活！） -->
-        <section id="view-cashflow" class="view space-y">
-            <!-- 今月のサマリー -->
-            <div class="summary-card">
-                <div class="summary-item">
-                    <span class="lbl">今月の収入</span>
-                    <span class="val income" id="month-income">¥0</span>
-                </div>
-                <div class="summary-item">
-                    <span class="lbl">今月の支出</span>
-                    <span class="val expense" id="month-expense">¥0</span>
-                </div>
-                <div class="summary-item">
-                    <span class="lbl">今月の収支</span>
-                    <span class="val" id="month-balance">¥0</span>
-                </div>
-            </div>
-
-            <!-- 入力パネル -->
+        <!-- 📊 2. 資産シミュレーション画面 -->
+        <section id="view-simulation" class="view">
             <div class="panel">
-                <h2 class="panel-title">💸 収支の記録</h2>
-                <div class="form-row" style="margin-bottom:10px;">
-                    <select id="cf-type" class="form-input" style="flex:0.7;" onchange="updateCategorySelector()">
-                        <option value="expense">支出</option>
-                        <option value="income">収入</option>
-                    </select>
-                    <select id="cf-category" class="form-input flex-1"></select>
+                <h2 class="panel-title">📊 資産シミュレーション</h2>
+                
+                <div class="sim-row">
+                    <div class="sim-input-group">
+                        <label>開始年齢</label>
+                        <input type="number" id="sim-start-age" class="form-input" value="25" min="18" max="80">
+                    </div>
+                    <div class="sim-input-group">
+                        <label>終了年齢</label>
+                        <input type="number" id="sim-end-age" class="form-input" value="65" min="19" max="100">
+                    </div>
                 </div>
-                <div class="form-row">
-                    <input type="number" id="cf-amount" class="form-input flex-1" placeholder="金額 (円)">
-                    <input type="text" id="cf-memo" class="form-input flex-1" placeholder="メモ（空欄OK）">
-                    <button class="btn btn-primary" onclick="recordCashflow()">追加</button>
+
+                <div class="sim-monthly-section">
+                    <label>月々の積立額</label>
+                    <div class="sim-monthly-control">
+                        <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(-1000)">－</button>
+                        <div class="sim-monthly-display">¥<span id="sim-monthly-value">30,000</span></div>
+                        <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(1000)">＋</button>
+                    </div>
+                </div>
+
+                <div class="sim-row">
+                    <div class="sim-input-group">
+                        <label>年利 (%)</label>
+                        <input type="number" id="sim-annual-rate" class="form-input" value="5" min="0" max="30" step="0.1">
+                    </div>
+                    <div class="sim-input-group">
+                        <label>インフレ率 (%)</label>
+                        <input type="number" id="sim-inflation-rate" class="form-input" value="2" min="0" max="10" step="0.1">
+                    </div>
+                </div>
+
+                <div class="sim-real-rate-display">
+                    → 実質利回り <span id="sim-real-rate">3.0</span>%
+                </div>
+
+                <div class="sim-info-box">
+                    💡 <strong>インフレ率とは？</strong><br>
+                    物価が毎年どれくらい上がるかの想定値。<br>
+                    年利からインフレ率を引いた「実質利回り」が、お金の本当の増え方になります。
                 </div>
             </div>
 
-            <!-- グラフパネル -->
-            <div class="panel text-center">
-                <h2 class="panel-title">📊 支出の内訳グラフ</h2>
-                <div style="max-width: 200px; margin: 0 auto;">
-                    <canvas id="expenseChart"></canvas>
-                </div>
-            </div>
-
-            <!-- 履歴リスト -->
             <div class="panel">
-                <h2 class="panel-title">📜 最近の収支履歴</h2>
-                <div id="cashflow-history-list" class="history-list"></div>
-            </div>
-
-            <!-- 固定費管理セクション -->
-            <div class="panel">
-                <h2 class="panel-title">🔄 毎月の固定費管理</h2>
-                <div class="form-row" style="margin-bottom: 15px;">
-                    <input type="text" id="fixed-name" class="form-input flex-1" placeholder="例: 家賃、サブスク">
-                    <input type="number" id="fixed-amount" class="form-input flex-1" placeholder="金額 (円)">
-                    <button class="btn btn-outline" onclick="addFixedCost()">登録</button>
+                <h2 class="panel-title">📈 資産推移グラフ</h2>
+                <div class="sim-chart-container">
+                    <canvas id="simChart"></canvas>
                 </div>
-                <div id="fixed-costs-list" class="history-list"></div>
-            </div>
-
-            <!-- 表形式（年間・月間集計表） -->
-            <div class="panel" style="overflow-x: auto;">
-                <h2 class="panel-title">📅 月別集計一覧表</h2>
-                <table class="report-table">
-                    <thead>
-                        <tr><th>年月</th><th>収入</th><th>支出</th><th>残高</th></tr>
-                    </thead>
-                    <tbody id="report-table-body"></tbody>
-                </table>
+                <div class="sim-result">
+                    <span id="sim-end-age-label">65</span>歳時点の資産予測：<strong>¥<span id="sim-final-amount">0</span></strong>
+                </div>
             </div>
         </section>
 
@@ -179,13 +166,37 @@
             <div id="envelopes-grid" class="envelopes-grid"></div>
         </section>
 
-        <!-- 📖 4. 25日振り返りアーカイブ（思い出図鑑） -->
-        <section id="view-archive" class="view">
-            <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
-                <h2 class="panel-title" style="text-align: center; font-size: 16px;">📅 月末振り返り図鑑</h2>
-                <p style="font-size: 11px; text-align: center; opacity: 0.8; margin: 0;">毎月25日に自動生成される、あなたの資産の成長記録です。</p>
+        <!-- 🎁 4. ご褒美画面 -->
+        <section id="view-rewards" class="view">
+            <!-- 目標登録 -->
+            <div class="panel">
+                <h2 class="panel-title">🎯 目標を設定する</h2>
+                <div class="form-row" style="margin-bottom:10px;">
+                    <input type="number" id="reward-target-amount" class="form-input flex-1" placeholder="目標金額 (円)">
+                </div>
+                <div class="form-row">
+                    <input type="text" id="reward-target-name" class="form-input flex-1" placeholder="達成したら何する？ (例: 焼肉)">
+                    <button class="btn btn-primary" onclick="addRewardTarget()">登録</button>
+                </div>
             </div>
-            <div id="archive-list" class="space-y"></div>
+
+            <!-- 未達成の目標 -->
+            <div class="panel">
+                <h2 class="panel-title">🚀 チャレンジ中の目標</h2>
+                <div id="reward-pending-list" class="reward-list"></div>
+            </div>
+
+            <!-- 達成コレクション -->
+            <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
+                <h2 class="panel-title">🏆 達成コレクション</h2>
+                <div id="reward-achieved-list" class="reward-list"></div>
+            </div>
+
+            <!-- 月末振り返りアーカイブ -->
+            <div class="panel">
+                <h2 class="panel-title">📅 月末振り返りアーカイブ</h2>
+                <div id="monthly-archive-list" class="space-y"></div>
+            </div>
         </section>
 
         <!-- ⚙️ 5. 設定画面 -->
@@ -222,6 +233,18 @@
         </section>
 
     </main>
+
+    <!-- 🎉 達成おめでとうポップアップ -->
+    <div id="modal-achievement" class="modal hidden" style="z-index: 4000;">
+        <div class="modal-content" style="width: 320px; border: 3px solid #ffd700;">
+            <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
+            <h2 style="margin-bottom: 5px;">おめでとう！</h2>
+            <div id="achievement-amount" style="font-size: 24px; font-weight: 900; color: #ffd700; margin-bottom: 10px;">¥1,000,000</div>
+            <div style="font-size: 14px; margin-bottom: 5px;">達成！</div>
+            <div id="achievement-reward" style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">🍖 焼肉に行こう！</div>
+            <button class="btn btn-primary w-full" onclick="closeAchievementModal()">やったね！</button>
+        </div>
+    </div>
 
     <!-- 🌟 25日振り返りポップアップ -->
     <div id="modal-report-25th" class="modal hidden" style="z-index: 4000;">
@@ -324,12 +347,12 @@
         </div>
     </div>
 
-    <!-- 📱 下部ナビゲーション（5タブ化！） -->
+    <!-- 📱 下部ナビゲーション（5タブ） -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
-        <button class="nav-btn" data-target="view-cashflow"><span class="icon">💸</span><br><span class="label">収支</span></button>
+        <button class="nav-btn" data-target="view-simulation"><span class="icon">📊</span><br><span class="label">シミュレーション</span></button>
         <button class="nav-btn" data-target="view-envelopes"><span class="icon">✉️</span><br><span class="label">封筒貯金</span></button>
-        <button class="nav-btn" data-target="view-archive"><span class="icon">📖</span><br><span class="label">記録</span></button>
+        <button class="nav-btn" data-target="view-rewards"><span class="icon">🎁</span><br><span class="label">ご褒美</span></button>
         <button class="nav-btn" data-target="view-settings"><span class="icon">⚙️</span><br><span class="label">設定</span></button>
     </nav>
 
