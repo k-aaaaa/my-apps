@@ -305,34 +305,17 @@ function renderSimChart() {
                 legend: {
                     display: true,
                     position: 'top',
-                    labels: {
-                        boxWidth: 12,
-                        font: { size: 10 }
-                    }
+                    labels: { boxWidth: 12, font: { size: 10 } }
                 },
                 tooltip: {
                     callbacks: {
-                        label: (context) => {
-                            return context.dataset.label + ': ¥' + context.raw.toLocaleString();
-                        }
+                        label: (context) => context.dataset.label + ': ¥' + context.raw.toLocaleString()
                     }
                 }
             },
             scales: {
-                x: {
-                    stacked: true,
-                    ticks: {
-                        maxTicksLimit: 6,
-                        font: { size: 10 }
-                    }
-                },
-                y: {
-                    stacked: true,
-                    ticks: {
-                        callback: (val) => '¥' + (val / 10000).toFixed(0) + '万',
-                        font: { size: 10 }
-                    }
-                }
+                x: { stacked: true, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
+                y: { stacked: true, ticks: { callback: (val) => '¥' + (val / 10000).toFixed(0) + '万', font: { size: 10 } } }
             }
         }
     });
@@ -936,7 +919,22 @@ function changeAppTheme(themeName) {
     state.appTheme = themeName;
     applyCurrentThemeAndColors();
     saveLocal();
+    
+    // グラフの再描画をCSS変数の反映後に少しだけ遅らせる（安全対策）
     if (simChartInstance) {
-        updateSimulation();
+        setTimeout(() => {
+            updateSimulation();
+        }, 50);
     }
+}
+
+// ==========================================================================
+// 🌐 PWA Service Worker 登録
+// ==========================================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => {
+            console.log('SW registration failed: ', err);
+        });
+    });
 }
