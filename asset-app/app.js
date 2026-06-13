@@ -136,6 +136,10 @@ function recordSecurities() {
     const amountStr = document.getElementById('input-securities-amount').value;
     if (!amountStr) return alert("金額を入力してください。");
     const amount = parseInt(amountStr, 10);
+    
+    // 【バグ対策】マイナス入力のガード
+    if (amount < 0) return alert("マイナスの金額は入力できません。");
+
     const today = new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     state.securities.history.unshift({ id: Date.now(), date: today, amount: amount });
     saveLocal();
@@ -221,11 +225,17 @@ function adjustMonthly(delta) {
 }
 
 function updateSimulation() {
-    const startAge = parseInt(document.getElementById('sim-start-age').value) || 25;
-    const endAge = parseInt(document.getElementById('sim-end-age').value) || 65;
+    let startAge = parseInt(document.getElementById('sim-start-age').value) || 25;
+    let endAge = parseInt(document.getElementById('sim-end-age').value) || 65;
     const monthly = state.simulation.monthly;
     const annualRate = parseFloat(document.getElementById('sim-annual-rate').value) || 0;
     const inflationRate = parseFloat(document.getElementById('sim-inflation-rate').value) || 0;
+
+    // 【バグ対策】年齢逆転の防止
+    if (endAge <= startAge) {
+        endAge = startAge + 1;
+        document.getElementById('sim-end-age').value = endAge;
+    }
 
     state.simulation.startAge = startAge;
     state.simulation.endAge = endAge;
@@ -379,6 +389,9 @@ function saveEnvelope() {
 
     if (!name || !targetStr) return alert("入力してください。");
     const target = parseInt(targetStr, 10);
+    
+    // 【バグ対策】目標金額0円・マイナスガード
+    if (target <= 0) return alert("目標金額は1円以上を設定してください。");
 
     if (id) {
         const env = state.envelopes.find(e => e.id === parseInt(id));
@@ -398,7 +411,16 @@ function saveEnvelope() {
 function deleteEnvelope() {
     vibrate();
     const id = parseInt(document.getElementById('envelope-edit-id').value);
-    if (confirm("削除しますか？")) {
+    const env = state.envelopes.find(e => e.id === id);
+    if (!env) return;
+
+    // 【UX改善】中身が入っている場合の警告
+    let msg = "この封筒を削除しますか？";
+    if (env.current > 0) {
+        msg = `⚠️ 警告\nこの封筒には現在 ¥${env.current.toLocaleString()} が入っています。\n削除するとこの金額も記録から消えますが、本当に削除してよろしいですか？`;
+    }
+
+    if (confirm(msg)) {
         state.envelopes = state.envelopes.filter(e => e.id !== id);
         saveLocal();
         closeModal('modal-envelope');
@@ -423,6 +445,10 @@ function updateEnvelopeMoney(type) {
     const amountStr = document.getElementById('em-amount').value;
     if (!amountStr) return;
     const amount = parseInt(amountStr, 10);
+    
+    // 【バグ対策】金額のマイナス入力ガード
+    if (amount <= 0) return alert("1円以上の金額を入力してください。");
+    
     const env = state.envelopes.find(e => e.id === id);
     if (!env) return;
 
@@ -464,7 +490,7 @@ function renderEnvelopes() {
             <button class="env-edit-btn" onclick="openEnvelopeModal(${env.id})">⚙️</button>
             <div class="env-header" style="background: ${env.color};">
                 <div class="env-emoji">${env.emoji}</div>
-                <div>${env.name}</div>
+                <div class="env-header-name">${env.name}</div>
             </div>
             <div class="env-body">
                 <div class="env-amount">¥${env.current.toLocaleString()}</div>
@@ -491,6 +517,10 @@ function addRewardTarget() {
     if (!amountStr || !name) return alert("金額とご褒美を入力してください。");
 
     const amount = parseInt(amountStr, 10);
+    
+    // 【バグ対策】目標金額のガード
+    if (amount <= 0) return alert("目標金額は1円以上を設定してください。");
+
     state.rewards.push({
         id: Date.now(),
         amount: amount,

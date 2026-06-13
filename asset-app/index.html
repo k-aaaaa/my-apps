@@ -1,3 +1,4 @@
+<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -15,6 +16,7 @@
 </head>
 <body class="theme-stylish">
 
+    <!-- 🔒 セキュリティ：PINロック画面 -->
     <div id="lock-screen" class="fixed-overlay hidden">
         <div class="lock-container">
             <div class="lock-icon">🔒</div>
@@ -40,6 +42,7 @@
         </div>
     </div>
 
+    <!-- 🔒 セキュリティ：秘密の質問 -->
     <div id="recovery-screen" class="fixed-overlay hidden">
         <div class="modal-content">
             <h2>🔐 パスワードの復旧</h2>
@@ -59,6 +62,7 @@
         </div>
     </div>
     
+    <!-- ⚙️ スプラッシュ画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">📈</div>
@@ -66,14 +70,18 @@
         </div>
     </div>
 
+    <!-- 背景レイヤー -->
     <div class="bg-layer" id="main-bg"></div>
 
+    <!-- ヘッダー -->
     <header class="header">
         <div class="header-title">MY ASSET</div>
     </header>
 
+    <!-- メインコンテンツ -->
     <main class="main-container">
 
+        <!-- 📈 1. 証券口座メイン画面 -->
         <section id="view-securities" class="view active">
             <div class="total-asset-panel">
                 <div class="total-label">証券口座 評価額</div>
@@ -95,6 +103,7 @@
             </div>
         </section>
 
+        <!-- 📊 2. 資産シミュレーション画面 -->
         <section id="view-simulation" class="view">
             <div class="panel">
                 <h2 class="panel-title">📊 資産シミュレーション</h2>
@@ -147,6 +156,7 @@
                     <canvas id="simChart"></canvas>
                 </div>
 
+                <!-- スライダーで年齢ごとの金額確認 -->
                 <div class="sim-slider-section">
                     <input type="range" id="sim-slider" class="sim-slider" min="0" max="40" value="40" oninput="onSimSliderChange(this.value)">
                     <div class="sim-slider-info">
@@ -174,6 +184,7 @@
             </div>
         </section>
 
+        <!-- ✉️ 3. 封筒貯金画面 -->
         <section id="view-envelopes" class="view">
             <div class="button-group" style="margin-bottom: 20px;">
                 <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
@@ -181,12 +192,14 @@
             <div id="envelopes-grid" class="envelopes-grid"></div>
         </section>
 
+        <!-- 🎁 4. ご褒美＆図鑑画面 (共存版) -->
         <section id="view-rewards" class="view space-y">
             
             <div class="section-divider">
                 <span>🎯 ご褒美ミッション</span>
             </div>
 
+            <!-- 目標登録 -->
             <div class="panel">
                 <h2 class="panel-title">新しい目標を設定</h2>
                 <div class="form-row" style="margin-bottom:10px;">
@@ -198,11 +211,13 @@
                 </div>
             </div>
 
+            <!-- 未達成の目標 -->
             <div class="panel">
                 <h2 class="panel-title">🚀 チャレンジ中の目標</h2>
                 <div id="reward-pending-list" class="reward-list"></div>
             </div>
 
+            <!-- 達成コレクション -->
             <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
                 <h2 class="panel-title">🏆 達成コレクション</h2>
                 <div id="reward-achieved-list" class="reward-list"></div>
@@ -212,12 +227,14 @@
                 <span>📖 振り返り図鑑</span>
             </div>
 
+            <!-- 月末振り返りアーカイブ -->
             <div class="panel">
                 <h2 class="panel-title">📅 月末振り返りアーカイブ</h2>
                 <div id="monthly-archive-list" class="space-y"></div>
             </div>
         </section>
 
+        <!-- ⚙️ 5. 設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ</h2>
@@ -252,6 +269,7 @@
 
     </main>
 
+    <!-- 🎉 達成おめでとうポップアップ -->
     <div id="modal-achievement" class="modal hidden" style="z-index: 4000;">
         <div class="modal-content" style="width: 320px; border: 3px solid #ffd700;">
             <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
@@ -263,6 +281,7 @@
         </div>
     </div>
 
+    <!-- 🌟 25日振り返りポップアップ -->
     <div id="modal-report-25th" class="modal hidden" style="z-index: 4000;">
         <div class="modal-content" style="width: 340px; max-height: 85vh; overflow-y: auto; border: 3px solid #ffd700;">
             <div style="font-size: 40px; margin-bottom: 5px;">🎉</div>
@@ -285,6 +304,7 @@
         </div>
     </div>
 
+    <!-- ✉️ 封筒作成・編集モーダル -->
     <div id="modal-envelope" class="modal hidden">
         <div class="modal-content">
             <h2 id="modal-envelope-title">新しい封筒</h2>
@@ -320,6 +340,7 @@
         </div>
     </div>
 
+    <!-- 💰 封筒 出し入れモーダル -->
     <div id="modal-envelope-money" class="modal hidden">
         <div class="modal-content">
             <h2><span id="em-emoji"></span> <span id="em-name"></span></h2>
@@ -336,6 +357,7 @@
         </div>
     </div>
 
+    <!-- 🔒 ロック設定モーダル -->
     <div id="modal-lock-setup" class="modal hidden">
         <div class="modal-content">
             <h2>ロックの設定</h2>
@@ -360,6 +382,7 @@
         </div>
     </div>
 
+    <!-- 📱 下部ナビゲーション（5タブ） -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
         <button class="nav-btn" data-target="view-simulation"><span class="icon">📊</span><br><span class="label">シミュレーション</span></button>
