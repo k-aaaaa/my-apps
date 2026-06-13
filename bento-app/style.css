@@ -59,31 +59,34 @@ body {
 
 /* お弁当・固有スタイル */
 .bento-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; margin-bottom: 10px; }
-.bento-info { display: flex; align-items: center; gap: 14px; }
-.bento-emoji-wrapper { font-size: 36px; }
-.bento-details { display: flex; flex-direction: column; justify-content: center; }
+.bento-info { display: flex; align-items: center; gap: 14px; flex: 1; overflow: hidden; } /* flex:1とoverflow:hidden追加 */
+.bento-emoji-wrapper { font-size: 36px; flex-shrink: 0; }
+.bento-details { display: flex; flex-direction: column; justify-content: center; flex: 1; overflow: hidden; } /* 追加 */
 .bento-name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.bento-name { font-weight: 800; font-size: 15px; }
+/* 🔧 異常に長い料理名のレイアウト崩壊防止 (word-break) */
+.bento-name { font-weight: 800; font-size: 15px; word-break: break-all; }
 
-.badge-danger { background: linear-gradient(135deg, #ff4d4d, #ff1a1a); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; }
-.badge-warning { background: linear-gradient(135deg, #ffb84d, #ff9900); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; }
+.badge-danger { background: linear-gradient(135deg, #ff4d4d, #ff1a1a); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.badge-warning { background: linear-gradient(135deg, #ffb84d, #ff9900); color: white; font-size: 9px; font-weight: bold; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
 
 .bento-qty-control { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.btn-circle { width: 28px; height: 28px; border-radius: 50%; border: none; font-weight: 900; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.08); color: inherit; }
+.btn-circle { width: 28px; height: 28px; border-radius: 50%; border: none; font-weight: 900; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.08); color: inherit; flex-shrink: 0; }
 .qty-display { font-weight: 900; font-size: 15px; min-width: 20px; text-align: center; }
-.btn-eat { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; background: var(--accent-color); color: #fff; }
+.btn-eat { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; background: var(--accent-color); color: #fff; flex-shrink: 0; }
 
 .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 20px; }
 .grid-container button { padding: 20px 15px; border-radius: 16px; border: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; color: inherit; font-size: 14px; font-weight: bold; background: var(--panel-bg); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.05); backdrop-filter: blur(10px);}
 .cooking-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 12px; }
-.cooking-title { font-size: 18px; font-weight: 900; }
+/* 🔧 料理名のレイアウト崩壊防止 */
+.cooking-title { font-size: 18px; font-weight: 900; word-break: break-all; }
 .counter-input { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 15px 0; }
 .counter-input .btn-circle { width: 44px; height: 44px; font-size: 20px; }
 .counter-input .form-input { width: 80px; font-size: 24px; }
 
 /* メニュー・お買い物リスト */
-.shopping-item-row { display: flex; align-items: center; padding: 6px 0; font-weight: bold; font-size: 14px; }
-.shopping-checkbox { width: 18px; height: 18px; margin-right: 10px; }
+/* 🔧 アイテム名のレイアウト崩壊防止 */
+.shopping-item-row { display: flex; align-items: center; padding: 6px 0; font-weight: bold; font-size: 14px; word-break: break-all; }
+.shopping-checkbox { width: 18px; height: 18px; margin-right: 10px; flex-shrink: 0; }
 .ing-tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ing-tag { padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s;}
 .ing-tag.active { background: var(--accent-color); color: #fff; opacity: 0.9;}
@@ -95,9 +98,11 @@ body {
 /* 履歴 */
 .history-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; border-radius: 12px; background: rgba(0,0,0,0.03); margin-bottom: 8px; font-size: 13px; font-weight: bold; border: 1px solid rgba(255,255,255,0.1); }
 .history-meta { font-size: 10px; opacity: 0.4; }
-.history-core { flex: 1; margin-left: 10px; display: flex; align-items: center; gap: 4px; }
-.history-amount { font-weight: 900; margin-right: 12px; }
-.btn-delete-history { background: none; border: none; font-size: 16px; font-weight: bold; color: inherit; opacity: 0.5; cursor: pointer; padding: 0 5px;}
+/* 🔧 履歴の名前のレイアウト崩壊防止 */
+.history-core { flex: 1; margin-left: 10px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.history-core span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-amount { font-weight: 900; margin-right: 12px; flex-shrink: 0; }
+.btn-delete-history { background: none; border: none; font-size: 16px; font-weight: bold; color: inherit; opacity: 0.5; cursor: pointer; padding: 0 5px; flex-shrink: 0;}
 .btn-delete-history:active { transform: scale(0.9); }
 
 /* スプラッシュ */

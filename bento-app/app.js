@@ -1,7 +1,15 @@
 // ==========================================================================
-// 🚀 パスワード撤廃＆初期化
+// 🚀 究極のBENTO APP ロジック
 // ==========================================================================
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
+
+function escapeHTML(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 let state = JSON.parse(localStorage.getItem('bento_universe_data')) || {
     inventory: [],      
@@ -58,7 +66,7 @@ function showToast(msg) {
 }
 
 // ==========================================================================
-// 🎨 カラーカスタマイズ制御エンジン（部位変更版）
+// 🎨 カラーカスタマイズ制御エンジン
 // ==========================================================================
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
@@ -136,6 +144,11 @@ function changeAppTheme(themeName) {
 document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         vibrate();
+        
+        if(document.getElementById('edit-recipe-id') && document.getElementById('edit-recipe-id').value !== "") {
+            cancelEditRecipe();
+        }
+
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(btn.dataset.target).classList.add('active');
@@ -151,18 +164,27 @@ function spinRoulette() {
     if(state.inventory.length === 0) {
         return alert("冷凍ストックがありません！\nまずは「作った」タブからお弁当を追加してね🍳");
     }
-    const randomIndex = Math.floor(Math.random() * state.inventory.length);
-    const picked = state.inventory[randomIndex];
+    
+    // 🔧 確率調整（在庫数に比例させる、いわゆるくじ引き方式）
+    let tickets = [];
+    state.inventory.forEach(item => {
+        for(let i=0; i<item.count; i++) {
+            tickets.push(item);
+        }
+    });
+    if(tickets.length === 0) return alert("ストックが0食です！");
+
+    const randomIndex = Math.floor(Math.random() * tickets.length);
+    const picked = tickets[randomIndex];
     
     confetti({ particleCount: 50, spread: 40, origin: { y: 0.6 } });
-    
     setTimeout(() => {
         alert(`🎲 今日の運勢が導いたお弁当は…\n\n【 ${picked.emoji} ${picked.name} 】\n\nこれに決定！美味しく食べてね！😋`);
     }, 100);
 }
 
 // ==========================================================================
-// 📦 在庫の修正・お金・履歴システム（エコ仕様）
+// 📦 在庫の修正・お金・履歴システム
 // ==========================================================================
 function adjustInventory(id, delta, isEaten = false) {
     vibrate();
@@ -171,7 +193,8 @@ function adjustInventory(id, delta, isEaten = false) {
     
     if (isEaten) {
         item.count += delta; 
-        state.savedAmount = (state.savedAmount || 0) + (parseInt(state.saveUnit) || 600);
+        const currentSaveUnit = parseInt(state.saveUnit) || 600;
+        state.savedAmount = (state.savedAmount || 0) + currentSaveUnit;
         
         state.history.unshift({
             id: Date.now(),
@@ -179,25 +202,21 @@ function adjustInventory(id, delta, isEaten = false) {
             name: item.name,
             emoji: item.emoji,
             count: 1,
-            snapshotRecipeId: item.recipeId 
+            savedValue: currentSaveUnit, 
+            snapshotRecipeId: item.recipeId,
+            snapshotTimestamp: item.timestamp 
         });
         
-        // 【エコ仕様】履歴が30件を超えたら古いものを自動でサクッと削除
-        if (state.history.length > 30) {
-            state.history = state.history.slice(0, 30);
-        }
+        if (state.history.length > 30) state.history = state.history.slice(0, 30);
         
-        showToast(`😋 食べました！(＋${state.saveUnit}円)`);
+        showToast(`😋 食べました！(＋${currentSaveUnit}円)`);
         confetti({ particleCount: 30, spread: 40, origin: { y: 0.8 } });
     } else {
         item.count += delta;
         showToast(`📦 ストック数を修正しました`);
     }
 
-    if (item.count <= 0) {
-        state.inventory = state.inventory.filter(i => i.id !== id);
-    }
-    
+    if (item.count <= 0) state.inventory = state.inventory.filter(i => i.id !== id);
     saveLocal();
 }
 
@@ -206,20 +225,23 @@ function revokeEatenHistory(historyId) {
     const histItem = state.history.find(h => h.id === historyId);
     if (!histItem) return;
 
-    if (confirm(`🍱 食べた記録を取り消しますか？\n\n・節約金額から ${state.saveUnit}円 引かれます。\n・「${histItem.name}」の在庫が1食分自動で復活します。`)) {
-        state.savedAmount = Math.max(0, (state.savedAmount || 0) - (parseInt(state.saveUnit) || 600));
-        let stockItem = state.inventory.find(i => i.recipeId === histItem.snapshotRecipeId);
+    const subtractValue = histItem.savedValue || (parseInt(state.saveUnit) || 600);
+
+    if (confirm(`🍱 食べた記録を取り消しますか？\n\n・節約金額から ${subtractValue}円 引かれます。\n・「${histItem.name}」の在庫が1食分自動で復活します。`)) {
+        
+        state.savedAmount = Math.max(0, (state.savedAmount || 0) - subtractValue);
+        
+        let stockItem = state.inventory.find(i => i.recipeId === histItem.snapshotRecipeId && i.timestamp === histItem.snapshotTimestamp);
         
         if (stockItem) {
             stockItem.count += 1;
         } else {
             state.inventory.push({
                 id: Date.now(), recipeId: histItem.snapshotRecipeId || Date.now(),
-                name: histItem.name, emoji: histItem.emoji || "🍱", count: 1, timestamp: Date.now() 
+                name: histItem.name, emoji: histItem.emoji || "🍱", count: 1, timestamp: histItem.snapshotTimestamp || Date.now() 
             });
         }
 
-        // ここで履歴配列から消すため、自動削除（slice）されたデータが勝手に復活することはありません。
         state.history = state.history.filter(h => h.id !== historyId);
         saveLocal();
         showToast("✖ 食べる前の状態に巻き戻しました");
@@ -229,8 +251,15 @@ function revokeEatenHistory(historyId) {
 function editSavedAmountManual() {
     vibrate();
     const val = prompt("【節約金額の手動微調整】\n現在の合計金額を直接変更したい場合は数値を入力:", state.savedAmount);
-    if (val !== null && !isNaN(val) && val !== "") {
-        state.savedAmount = parseInt(val); saveLocal(); showToast("💰 金額を変更しました");
+    if (val !== null && val.trim() !== "") {
+        const parsed = parseInt(val.replace(/[,\s]/g, ''), 10);
+        if (!isNaN(parsed)) {
+            state.savedAmount = Math.max(0, parsed);
+            saveLocal(); 
+            showToast("💰 金額を変更しました");
+        } else {
+            alert("正しい数値を入力してください。");
+        }
     }
 }
 
@@ -266,8 +295,8 @@ function finishCooking() {
     vibrate();
     if (!currentRecipe) return;
 
-    const count = parseInt(document.getElementById('make-count').value);
-    if (!count || count <= 0) return;
+    const inputVal = Number(document.getElementById('make-count').value);
+    const count = Math.max(1, Math.floor(inputVal));
     
     currentRecipe.lastCount = count;
     state.inventory.push({
@@ -282,7 +311,6 @@ function finishCooking() {
     saveLocal();
     showToast(`✨ストックを追加しました！`);
     
-    // ホーム画面に自動で戻る
     document.querySelector('.bottom-nav button[data-target="view-home"]').click();
 }
 
@@ -292,7 +320,8 @@ function finishCooking() {
 function saveRecipe() {
     vibrate();
     const id = document.getElementById('edit-recipe-id').value;
-    const emoji = document.getElementById('new-recipe-emoji').value.trim() || "🍱";
+    const emojiInput = document.getElementById('new-recipe-emoji').value.trim() || "🍱";
+    const emoji = emojiInput.substring(0, 4); 
     const name = document.getElementById('new-recipe-name').value.trim();
     const ing = document.getElementById('new-recipe-ing').value.trim();
     if (!name) return alert("料理名を入力してください！");
@@ -323,10 +352,17 @@ function cancelEditRecipe() {
 
 function deleteRecipe(id) {
     if (!confirm("このメニューを削除しますか？(ストックは消えません)")) return;
-    if (currentRecipe && currentRecipe.id === id) cancelCooking(); // 調理中の誤作動防止
+    if (currentRecipe && currentRecipe.id === id) cancelCooking(); 
     
     state.recipes = state.recipes.filter(r => r.id !== id);
     state.shoppingCart = state.shoppingCart.filter(cartId => cartId !== id); 
+    
+    let allActiveIngs = [];
+    state.recipes.forEach(r => {
+        if(r.ingredients) allActiveIngs.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
+    });
+    state.crossedOut = state.crossedOut.filter(ing => allActiveIngs.includes(ing));
+
     saveLocal();
 }
 
@@ -348,7 +384,7 @@ function copyShoppingListToClipboard() {
     let allIngs = [];
     state.shoppingCart.forEach(id => {
         const r = state.recipes.find(x => x.id === id);
-        if(r && r.ingredients) allIngs.push(...r.ingredients.split(/[,、\s]+/).filter(i => i.trim() !== ""));
+        if(r && r.ingredients) allIngs.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
     });
     allIngs = [...new Set(allIngs)];
     if (allIngs.length === 0) return showToast("リストが空っぽです");
@@ -357,33 +393,126 @@ function copyShoppingListToClipboard() {
         text += `${state.crossedOut.includes(ing) ? " ■ [済] " : " □ "}${ing}\n`;
     });
     
-    navigator.clipboard.writeText(text).then(() => showToast("📋 LINE貼り付け用にコピーしました！"));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => showToast("📋 LINE貼り付け用にコピーしました！"))
+            .catch(() => prompt("コピーがブロックされました。以下のテキストを手動でコピーしてください:", text));
+    } else {
+        prompt("お使いのブラウザでは自動コピーができません。以下のテキストを手動でコピーしてください:", text);
+    }
+}
+
+function resetShoppingList() {
+    vibrate();
+    if(state.shoppingCart.length === 0) return showToast("リストは既に空です");
+    if(confirm("お買い物お疲れ様でした！\nチェックしたリストを空（リセット）にしますか？")) {
+        state.shoppingCart = [];
+        state.crossedOut = [];
+        saveLocal();
+        showToast("🛒 リストをリセットしました！");
+    }
 }
 
 // ==========================================================================
-// 🖼️ 設定管理・GAS同期
+// 🖼️ 設定管理・GAS・バックアップ
 // ==========================================================================
 function saveWelcomeImage(e) {
     const file = e.target.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(event) {
-        try { localStorage.setItem('bento_welcome_img', event.target.result); document.getElementById('welcome-img-preview').src = event.target.result; document.getElementById('welcome-img-preview-container').classList.remove('hidden'); showToast("🖼️ お出迎え画像を登録しました！"); } 
-        catch(err) { alert("⚠️ 画像サイズが大きすぎます。小さめの画像を選んでください。"); }
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            
+            try { 
+                localStorage.setItem('bento_welcome_img', compressedBase64); 
+                document.getElementById('welcome-img-preview').src = compressedBase64; 
+                document.getElementById('welcome-img-preview-container').classList.remove('hidden'); 
+                showToast("🖼️ お出迎え画像を登録しました！"); 
+            } catch(err) { 
+                alert("⚠️ まだ画像サイズが大きすぎます。別の画像を選んでください。"); 
+            }
+        };
+        img.src = event.target.result;
     };
     reader.readAsDataURL(file);
 }
+
 function clearWelcomeImage() { localStorage.removeItem('bento_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("画像を消去しました"); }
 function saveSplashTime(val) { state.splashTime = parseInt(val); saveLocal(); }
 function saveAppSettings() { vibrate(); state.saveUnit = parseInt(document.getElementById('settings-save-unit').value) || 600; state.alertDays = parseInt(document.getElementById('settings-alert-days').value) || 14; saveLocal(); showToast("⚙️ 設定を保存しました"); }
 
 function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('bento_gas_url', GAS_URL); showToast("☁️ 連携URLを保存しました"); }
 function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
+
 function triggerManualSync() {
-    vibrate(); if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }).then(() => showToast("☁️ 手動バックアップが完了しました！")).catch(() => showToast("⚠️ 同期に失敗しました"));
+    vibrate(); 
+    if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
+    
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" } })
+    .then(res => {
+        if(!res.ok && res.type !== 'opaque') throw new Error();
+        showToast("☁️ 手動バックアップが完了しました！");
+    })
+    .catch(() => showToast("⚠️ 通信に失敗しました。URLやネット環境を確認してください"));
 }
-function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" }, mode: "no-cors" }); }
-function resetData() { if(!confirm("本当に全てのデータを初期化しますか？")) return; localStorage.clear(); location.reload(); }
+function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" } }).catch(() => {}); }
+
+function exportData() {
+    vibrate();
+    const dataStr = JSON.stringify(state);
+    const blob = new Blob([dataStr], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BENTO_APP_BACKUP_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+    vibrate();
+    const file = e.target.files[0];
+    if(!file) return;
+    
+    if(!confirm("⚠️ 警告\nファイルを読み込むと、現在のデータはすべて上書きされます！\n本当によろしいですか？")) {
+        e.target.value = ''; return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+        try {
+            const importedState = JSON.parse(ev.target.result);
+            if(importedState && importedState.inventory && importedState.recipes) {
+                state = { ...state, ...importedState };
+                saveLocal();
+                alert("✨ データの復元に成功しました！アプリをリロードします。");
+                location.reload();
+            } else {
+                alert("⚠️ このファイルはお弁当アプリのバックアップではありません。");
+            }
+        } catch(err) {
+            alert("⚠️ 読み込みエラー: ファイルが壊れている可能性があります。");
+        }
+    };
+    reader.readAsText(file);
+}
+
+function resetData() { 
+    if(!confirm("本当に全てのデータを初期化しますか？\n（※他のアプリのデータは無事です）")) return; 
+    localStorage.removeItem('bento_universe_data'); 
+    localStorage.removeItem('bento_welcome_img');
+    localStorage.removeItem('bento_gas_url');
+    location.reload(); 
+}
 
 // ==========================================================================
 // 🖌️ メイン画面・描画ロジック
@@ -416,9 +545,9 @@ function render() {
         invList.innerHTML += `
             <div class="bento-card">
                 <div class="bento-info">
-                    <div class="bento-emoji-wrapper">${item.emoji || "🍱"}</div>
+                    <div class="bento-emoji-wrapper">${escapeHTML(item.emoji || "🍱")}</div>
                     <div class="bento-details">
-                        <div class="bento-name-row"><span class="bento-name">${item.name}</span>${badgeHtml}</div>
+                        <div class="bento-name-row"><span class="bento-name">${escapeHTML(item.name)}</span>${badgeHtml}</div>
                         <div class="bento-qty-control">
                             <button onclick="adjustInventory(${item.id}, -1, false)" class="btn-circle">-</button>
                             <span class="qty-display">${item.count}</span>
@@ -436,7 +565,7 @@ function render() {
     recList.innerHTML = '';
     if(state.recipes.length === 0) recList.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; opacity:0.5; font-weight:bold; font-size:13px;">「メニュー」タブから料理を登録してください✏️</div>';
     state.recipes.forEach(recipe => {
-        recList.innerHTML += `<button onclick="startCooking(${recipe.id})"><span style="font-size:30px;">${recipe.emoji || "🍱"}</span><div style="font-weight:900; font-size:14px;">${recipe.name}</div></button>`;
+        recList.innerHTML += `<button onclick="startCooking(${recipe.id})"><span style="font-size:30px;">${escapeHTML(recipe.emoji || "🍱")}</span><div style="font-weight:900; font-size:14px;">${escapeHTML(recipe.name)}</div></button>`;
     });
 
     const editList = document.getElementById('recipe-edit-list');
@@ -444,7 +573,7 @@ function render() {
     state.recipes.forEach(recipe => {
         editList.innerHTML += `
             <div class="recipe-edit-row">
-                <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">${recipe.emoji || "🍱"}</span> ${recipe.name}</div>
+                <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:16px;">${escapeHTML(recipe.emoji || "🍱")}</span> ${escapeHTML(recipe.name)}</div>
                 <div style="display:flex;gap:4px;">
                     <button onclick="editRecipe(${recipe.id})" style="color:var(--accent-color); background:none; border:none; font-weight:bold; cursor:pointer;">編集</button>
                     <button onclick="deleteRecipe(${recipe.id})" style="color:#c53030; background:none; border:none; font-weight:bold; cursor:pointer; margin-left:6px;">削除</button>
@@ -457,14 +586,14 @@ function render() {
     let shopHtml = '<div class="space-y" style="display:flex; flex-direction:column; gap:6px;">';
     state.recipes.forEach(r => {
         const checked = state.shoppingCart.includes(r.id) ? 'checked' : '';
-        shopHtml += `<label class="shopping-item-row"><input type="checkbox" class="shopping-checkbox" ${checked} onchange="toggleShopCart(${r.id})"><span style="font-size:16px; margin-right:4px;">${r.emoji || "🍱"}</span> ${r.name}を買う</label>`;
+        shopHtml += `<label class="shopping-item-row"><input type="checkbox" class="shopping-checkbox" ${checked} onchange="toggleShopCart(${r.id})"><span style="font-size:16px; margin-right:4px;">${escapeHTML(r.emoji || "🍱")}</span> ${escapeHTML(r.name)}を買う</label>`;
     });
     shopHtml += '</div><hr style="border:0; border-top:1px solid rgba(0,0,0,0.05); margin:15px 0;"><div class="ing-tag-container">';
     
     let allIngredients = [];
     state.shoppingCart.forEach(id => {
         const r = state.recipes.find(x => x.id === id);
-        if(r && r.ingredients) allIngredients.push(...r.ingredients.split(/[,、\s]+/).filter(i => i.trim() !== ""));
+        if(r && r.ingredients) allIngredients.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
     });
     allIngredients = [...new Set(allIngredients)];
     
@@ -472,7 +601,7 @@ function render() {
     else {
         allIngredients.forEach(ing => {
             const isCrossed = state.crossedOut.includes(ing);
-            shopHtml += `<button onclick="toggleIng('${ing}')" class="ing-tag ${isCrossed ? 'crossed' : 'active'}">${ing}</button>`;
+            shopHtml += `<button onclick="toggleIng('${escapeHTML(ing)}')" class="ing-tag ${isCrossed ? 'crossed' : 'active'}">${escapeHTML(ing)}</button>`;
         });
     }
     shopContainer.innerHTML = shopHtml + '</div>';
@@ -482,11 +611,12 @@ function render() {
     if(state.history.length === 0) histList.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4; font-size:12px; font-weight:bold;">食べた履歴はまだありません😋</div>';
     
     state.history.forEach(h => {
+        const histValue = h.savedValue || state.saveUnit || 600;
         histList.innerHTML += `
             <div class="history-item-row">
                 <div class="history-meta">${h.date}</div>
-                <div class="history-core"><span style="font-size:16px;">${h.emoji || "🍱"}</span><span>${h.name} を1食</span></div>
-                <span class="history-amount">¥${state.saveUnit}浮いた!</span>
+                <div class="history-core"><span style="font-size:16px;">${escapeHTML(h.emoji || "🍱")}</span><span>${escapeHTML(h.name)} を1食</span></div>
+                <span class="history-amount">¥${histValue}浮いた!</span>
                 <button onclick="revokeEatenHistory(${h.id})" class="btn-delete-history" title="取り消して在庫に戻す">✖</button>
             </div>
         `;
@@ -497,4 +627,12 @@ function render() {
     document.getElementById('gas-url').value = GAS_URL;
     const autoSyncEl = document.getElementById('settings-auto-sync');
     if (autoSyncEl) autoSyncEl.checked = state.autoSync || false;
+}
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => {
+            console.log('SW registration failed: ', err);
+        });
+    });
 }
