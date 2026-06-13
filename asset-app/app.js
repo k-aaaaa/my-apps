@@ -1,4 +1,3 @@
-// File: app.js
 // ==========================================================================
 // 🚀 データベースエンジン (IndexedDB)
 // ==========================================================================
@@ -137,7 +136,6 @@ function recordSecurities() {
     if (!amountStr) return alert("金額を入力してください。");
     const amount = parseInt(amountStr, 10);
     
-    // 【バグ対策】マイナス入力のガード
     if (amount < 0) return alert("マイナスの金額は入力できません。");
 
     const today = new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -231,7 +229,6 @@ function updateSimulation() {
     const annualRate = parseFloat(document.getElementById('sim-annual-rate').value) || 0;
     const inflationRate = parseFloat(document.getElementById('sim-inflation-rate').value) || 0;
 
-    // 【バグ対策】年齢逆転の防止
     if (endAge <= startAge) {
         endAge = startAge + 1;
         document.getElementById('sim-end-age').value = endAge;
@@ -312,16 +309,8 @@ function renderSimChart() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: { boxWidth: 12, font: { size: 10 } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: (context) => context.dataset.label + ': ¥' + context.raw.toLocaleString()
-                    }
-                }
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+                tooltip: { callbacks: { label: (context) => context.dataset.label + ': ¥' + context.raw.toLocaleString() } }
             },
             scales: {
                 x: { stacked: true, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
@@ -350,8 +339,14 @@ function onSimSliderChange(value) {
 }
 
 // ==========================================================================
-// ✉️ 封筒貯金ロジック
+// ✉️ 封筒貯金ロジック (管理画面＆本画面の分離)
 // ==========================================================================
+function toggleEnvManagement() {
+    vibrate();
+    const panel = document.getElementById('env-management-panel');
+    panel.classList.toggle('hidden');
+}
+
 function openEnvelopeModal(id = null) {
     vibrate();
     const m = document.getElementById('modal-envelope');
@@ -389,8 +384,6 @@ function saveEnvelope() {
 
     if (!name || !targetStr) return alert("入力してください。");
     const target = parseInt(targetStr, 10);
-    
-    // 【バグ対策】目標金額0円・マイナスガード
     if (target <= 0) return alert("目標金額は1円以上を設定してください。");
 
     if (id) {
@@ -414,10 +407,9 @@ function deleteEnvelope() {
     const env = state.envelopes.find(e => e.id === id);
     if (!env) return;
 
-    // 【UX改善】中身が入っている場合の警告
-    let msg = "この封筒を削除しますか？";
+    let msg = "この封筒を削除しますか？\n（※中身のお金や履歴は総資産には戻らず、完全に消滅します）";
     if (env.current > 0) {
-        msg = `⚠️ 警告\nこの封筒には現在 ¥${env.current.toLocaleString()} が入っています。\n削除するとこの金額も記録から消えますが、本当に削除してよろしいですか？`;
+        msg = `⚠️ 最終警告\nこの封筒には現在 ¥${env.current.toLocaleString()} が入っています。\n現実の封筒を処分するのと同じく、削除するとこの金額も完全に消滅します！\n本当に削除してよろしいですか？`;
     }
 
     if (confirm(msg)) {
@@ -446,7 +438,6 @@ function updateEnvelopeMoney(type) {
     if (!amountStr) return;
     const amount = parseInt(amountStr, 10);
     
-    // 【バグ対策】金額のマイナス入力ガード
     if (amount <= 0) return alert("1円以上の金額を入力してください。");
     
     const env = state.envelopes.find(e => e.id === id);
@@ -471,23 +462,24 @@ function updateEnvelopeMoney(type) {
 
 function renderEnvelopes() {
     const grid = document.getElementById('envelopes-grid');
+    const mContainer = document.getElementById('management-envelope-list');
     grid.innerHTML = "";
+    mContainer.innerHTML = "";
 
     if (state.envelopes.length === 0) {
         grid.innerHTML = "<div style='grid-column: 1/-1; text-align:center; opacity:0.5; padding:30px; font-weight:bold;'>まだ封筒がありません</div>";
+        mContainer.innerHTML = "<div style='text-align:center; opacity:0.5; font-size:12px;'>編集できる封筒がありません</div>";
         return;
     }
 
     state.envelopes.forEach(env => {
         const percent = Math.min(100, Math.floor((env.current / env.target) * 100));
+        
+        // 1. メイン画面のカード（出し入れ専用、編集アイコンなし）
         const card = document.createElement('div');
         card.className = "env-card";
-        card.onclick = (e) => {
-            if (e.target.classList.contains('env-edit-btn')) return;
-            openMoneyModal(env.id);
-        };
+        card.onclick = () => openMoneyModal(env.id);
         card.innerHTML = `
-            <button class="env-edit-btn" onclick="openEnvelopeModal(${env.id})">⚙️</button>
             <div class="env-header" style="background: ${env.color};">
                 <div class="env-emoji">${env.emoji}</div>
                 <div class="env-header-name">${env.name}</div>
@@ -503,6 +495,18 @@ function renderEnvelopes() {
                 </div>
             </div>`;
         grid.appendChild(card);
+
+        // 2. 外付け管理画面のリスト
+        const mItem = document.createElement('div');
+        mItem.style.display = 'flex'; mItem.style.justifyContent = 'space-between'; mItem.style.alignItems = 'center';
+        mItem.style.background = 'var(--panel-bg)'; mItem.style.padding = '10px'; mItem.style.borderRadius = '8px';
+        mItem.innerHTML = `
+            <div style="font-size:13px; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                ${env.emoji} ${env.name} (¥${env.target.toLocaleString()})
+            </div>
+            <button class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="openEnvelopeModal(${env.id})">✏️ 編集</button>
+        `;
+        mContainer.appendChild(mItem);
     });
 }
 
@@ -517,18 +521,9 @@ function addRewardTarget() {
     if (!amountStr || !name) return alert("金額とご褒美を入力してください。");
 
     const amount = parseInt(amountStr, 10);
-    
-    // 【バグ対策】目標金額のガード
     if (amount <= 0) return alert("目標金額は1円以上を設定してください。");
 
-    state.rewards.push({
-        id: Date.now(),
-        amount: amount,
-        name: name,
-        achieved: false,
-        achievedDate: null,
-        shown: false
-    });
+    state.rewards.push({ id: Date.now(), amount: amount, name: name, achieved: false, achievedDate: null, shown: false });
     saveLocal();
     document.getElementById('reward-target-amount').value = "";
     document.getElementById('reward-target-name').value = "";
@@ -565,7 +560,6 @@ function checkAchievements() {
 
 function showNextAchievement() {
     if (pendingAchievements.length === 0) return;
-
     const reward = pendingAchievements.shift();
     reward.shown = true;
     saveLocal();
@@ -924,9 +918,9 @@ function closeModal(id) {
 
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
-    const themeSel = document.getElementById('theme-selector');
-    if (themeSel) themeSel.value = theme;
-
+    
+    // UIをシンプルカラーセレクターに変更したためselectの同期は廃止
+    
     const colors = state.customColors[theme] || state.customColors['theme-stylish'];
     const root = document.documentElement;
     root.style.setProperty('--bg-color', colors.bg);
@@ -950,7 +944,6 @@ function changeAppTheme(themeName) {
     applyCurrentThemeAndColors();
     saveLocal();
     
-    // グラフの再描画をCSS変数の反映後に少しだけ遅らせる（安全対策）
     if (simChartInstance) {
         setTimeout(() => {
             updateSimulation();

@@ -1,4 +1,3 @@
-<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -186,9 +185,22 @@
 
         <!-- ✉️ 3. 封筒貯金画面 -->
         <section id="view-envelopes" class="view">
-            <div class="button-group" style="margin-bottom: 20px;">
-                <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
+            <!-- 📁 外付けの封筒管理エリア -->
+            <div class="panel" style="margin-bottom: 20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
+                    <button class="btn btn-outline" style="margin-left: 10px; padding: 14px 20px;" onclick="toggleEnvManagement()">⚙️ 管理</button>
+                </div>
+
+                <!-- 開閉式の管理パネル -->
+                <div id="env-management-panel" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 12px; border: 1px dashed var(--accent-color);">
+                    <h3 style="margin: 0 0 10px 0; font-size: 13px;">⚙️ 封筒の編集・削除</h3>
+                    <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">名前や予算を変えても中のお金はそのままです。削除すると中身も消滅します。</p>
+                    <div id="management-envelope-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
             </div>
+
+            <!-- メインの封筒一覧 -->
             <div id="envelopes-grid" class="envelopes-grid"></div>
         </section>
 
@@ -238,18 +250,19 @@
         <section id="view-settings" class="view space-y">
             <div class="panel">
                 <h2 class="panel-title">🎨 アプリのテーマ</h2>
-                <select id="theme-selector" class="form-input" onchange="changeAppTheme(this.value)">
-                    <option value="theme-stylish">🤍 スタイリッシュ (すりガラス)</option>
-                    <option value="theme-cute">🌸 ポップ＆キュート (パステル)</option>
-                    <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン)</option>
-                </select>
+                <!-- 余計な文字を排除したシンプルな色だけUI -->
+                <div style="display: flex; gap: 20px; justify-content: center; padding: 10px 0;">
+                    <button class="color-btn" style="background:#1d1d1f; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-stylish')"></button>
+                    <button class="color-btn" style="background:#ff85a1; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-cute')"></button>
+                    <button class="color-btn" style="background:#00ffcc; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-gaming')"></button>
+                </div>
             </div>
 
             <div class="panel" style="border: 2px solid #ff4444;">
                 <h2 class="panel-title">🔒 アプリロック設定</h2>
                 <div id="lock-status-display" style="margin-bottom:10px; font-weight:bold;">状態: <span id="lock-status-text">未設定</span></div>
                 <button class="btn btn-outline w-full" id="btn-setup-lock" onclick="openLockSetupModal()">ロックを設定・変更する</button>
-                <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()">ロックを解除（オフにする）</button>
+                <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()" style="margin-top:10px;">ロックを解除（オフにする）</button>
             </div>
 
             <div class="panel" style="border: 2px solid var(--accent-color);">
