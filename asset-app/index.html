@@ -15,7 +15,6 @@
 </head>
 <body class="theme-stylish">
 
-    <!-- 🔒 セキュリティ：PINロック画面 -->
     <div id="lock-screen" class="fixed-overlay hidden">
         <div class="lock-container">
             <div class="lock-icon">🔒</div>
@@ -41,7 +40,6 @@
         </div>
     </div>
 
-    <!-- 🔒 セキュリティ：秘密の質問 -->
     <div id="recovery-screen" class="fixed-overlay hidden">
         <div class="modal-content">
             <h2>🔐 パスワードの復旧</h2>
@@ -61,7 +59,6 @@
         </div>
     </div>
     
-    <!-- ⚙️ スプラッシュ画面 -->
     <div id="splash" class="fixed-splash">
         <div id="splash-default" class="splash-content">
             <div class="splash-logo">📈</div>
@@ -69,40 +66,36 @@
         </div>
     </div>
 
-    <!-- 背景レイヤー -->
     <div class="bg-layer" id="main-bg"></div>
 
-    <!-- ヘッダー -->
     <header class="header">
         <div class="header-title">MY ASSET</div>
+        <button class="btn-mask-toggle" onclick="toggleGlobalMask()">👁️</button>
     </header>
 
-    <!-- メインコンテンツ -->
-    <main class="main-container">
+    <main class="main-container" id="main-app-content" style="visibility: hidden;">
 
-        <!-- 📈 1. 証券口座メイン画面 -->
         <section id="view-securities" class="view active">
-            <div class="total-asset-panel">
-                <div class="total-label">証券口座 評価額</div>
-                <div class="total-value">¥ <span id="display-total-securities">0</span></div>
-                <div class="total-diff" id="display-diff">前日比: --</div>
+            <div class="total-asset-panel" onclick="toggleGlobalMask()">
+                <div class="total-label">証券口座 評価額 (タップで隠す)</div>
+                <div class="total-value">¥ <span id="display-total-securities" class="maskable">0</span></div>
+                <div class="total-diff" id="display-diff">前回比: --</div>
             </div>
 
             <div class="panel">
                 <h2 class="panel-title">📝 今日の評価額を記録</h2>
                 <div class="form-row">
-                    <input type="number" id="input-securities-amount" class="form-input flex-1" placeholder="現在の評価額 (円)">
+                    <input type="text" id="input-securities-amount" class="form-input flex-1" placeholder="現在の評価額 (円)" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     <button class="btn btn-primary" onclick="recordSecurities()">記録</button>
                 </div>
             </div>
 
             <div class="panel">
                 <h2 class="panel-title">📊 評価額の推移 (履歴)</h2>
-                <div id="securities-history-list" class="history-list"></div>
+                <div id="securities-history-list" class="history-list maskable-list"></div>
             </div>
         </section>
 
-        <!-- 📊 2. 資産シミュレーション画面 -->
         <section id="view-simulation" class="view">
             <div class="panel">
                 <h2 class="panel-title">📊 資産シミュレーション</h2>
@@ -110,11 +103,11 @@
                 <div class="sim-row">
                     <div class="sim-input-group">
                         <label>開始年齢</label>
-                        <input type="number" id="sim-start-age" class="form-input" value="25" min="18" max="80">
+                        <input type="text" id="sim-start-age" class="form-input" value="25" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
                     <div class="sim-input-group">
                         <label>終了年齢</label>
-                        <input type="number" id="sim-end-age" class="form-input" value="65" min="19" max="100">
+                        <input type="text" id="sim-end-age" class="form-input" value="65" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
                 </div>
 
@@ -122,7 +115,7 @@
                     <label>月々の積立額</label>
                     <div class="sim-monthly-control">
                         <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(-1000)">－</button>
-                        <div class="sim-monthly-display">¥<span id="sim-monthly-value">30,000</span></div>
+                        <div class="sim-monthly-display maskable">¥<span id="sim-monthly-value">30,000</span></div>
                         <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(1000)">＋</button>
                     </div>
                 </div>
@@ -130,35 +123,28 @@
                 <div class="sim-row">
                     <div class="sim-input-group">
                         <label>年利 (%)</label>
-                        <input type="number" id="sim-annual-rate" class="form-input" value="5" min="0" max="30" step="0.1">
+                        <input type="number" id="sim-annual-rate" class="form-input" value="5" step="0.1" inputmode="decimal">
                     </div>
                     <div class="sim-input-group">
                         <label>インフレ率 (%)</label>
-                        <input type="number" id="sim-inflation-rate" class="form-input" value="2" min="0" max="10" step="0.1">
+                        <input type="number" id="sim-inflation-rate" class="form-input" value="2" step="0.1" inputmode="decimal">
                     </div>
                 </div>
 
                 <div class="sim-real-rate-display">
                     → 実質利回り <span id="sim-real-rate">3.0</span>%
                 </div>
-
-                <div class="sim-info-box">
-                    💡 <strong>インフレ率とは？</strong><br>
-                    物価が毎年どれくらい上がるかの想定値。<br>
-                    年利からインフレ率を引いた「実質利回り」が、お金の本当の増え方になります。
-                </div>
             </div>
 
-            <div class="panel">
+            <div class="panel" id="chart-panel">
                 <h2 class="panel-title">📈 資産推移グラフ</h2>
                 <div class="sim-chart-container">
                     <canvas id="simChart"></canvas>
                 </div>
 
-                <!-- スライダーで年齢ごとの金額確認 -->
                 <div class="sim-slider-section">
                     <input type="range" id="sim-slider" class="sim-slider" min="0" max="40" value="40" oninput="onSimSliderChange(this.value)">
-                    <div class="sim-slider-info">
+                    <div class="sim-slider-info maskable-list">
                         <div class="sim-slider-age-label"><span id="sim-slider-age">65歳</span>時点</div>
                         <div class="sim-slider-details">
                             <div class="sim-detail-item">
@@ -177,45 +163,35 @@
                     </div>
                 </div>
 
-                <div class="sim-result">
+                <div class="sim-result maskable-list">
                     <span id="sim-end-age-label">65</span>歳時点の資産予測：<strong>¥<span id="sim-final-amount">0</span></strong>
                 </div>
             </div>
         </section>
 
-        <!-- ✉️ 3. 封筒貯金画面 -->
         <section id="view-envelopes" class="view">
-            <!-- 📁 外付けの封筒管理エリア -->
             <div class="panel" style="margin-bottom: 20px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <button class="btn btn-outline w-full" onclick="openEnvelopeModal()">＋ 新しい封筒を作る</button>
                     <button class="btn btn-outline" style="margin-left: 10px; padding: 14px 20px;" onclick="toggleEnvManagement()">⚙️ 管理</button>
                 </div>
 
-                <!-- 開閉式の管理パネル -->
                 <div id="env-management-panel" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.05); border-radius: 12px; border: 1px dashed var(--accent-color);">
                     <h3 style="margin: 0 0 10px 0; font-size: 13px;">⚙️ 封筒の編集・削除</h3>
-                    <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">名前や予算を変えても中のお金はそのままです。削除すると中身も消滅します。</p>
                     <div id="management-envelope-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
             </div>
 
-            <!-- メインの封筒一覧 -->
-            <div id="envelopes-grid" class="envelopes-grid"></div>
+            <div id="envelopes-grid" class="envelopes-grid maskable-list"></div>
         </section>
 
-        <!-- 🎁 4. ご褒美＆図鑑画面 (共存版) -->
         <section id="view-rewards" class="view space-y">
-            
-            <div class="section-divider">
-                <span>🎯 ご褒美ミッション</span>
-            </div>
+            <div class="section-divider"><span>🎯 ご褒美ミッション</span></div>
 
-            <!-- 目標登録 -->
             <div class="panel">
                 <h2 class="panel-title">新しい目標を設定</h2>
                 <div class="form-row" style="margin-bottom:10px;">
-                    <input type="number" id="reward-target-amount" class="form-input flex-1" placeholder="目標金額 (円)">
+                    <input type="text" id="reward-target-amount" class="form-input flex-1" placeholder="目標金額 (円)" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div class="form-row">
                     <input type="text" id="reward-target-name" class="form-input flex-1" placeholder="達成したら何する？ (例: 焼肉)">
@@ -223,43 +199,56 @@
                 </div>
             </div>
 
-            <!-- 未達成の目標 -->
             <div class="panel">
                 <h2 class="panel-title">🚀 チャレンジ中の目標</h2>
-                <div id="reward-pending-list" class="reward-list"></div>
+                <div id="reward-pending-list" class="reward-list maskable-list"></div>
             </div>
 
-            <!-- 達成コレクション -->
             <div class="panel" style="background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,255,255,0.6)); border: 1px solid #ffd700;">
                 <h2 class="panel-title">🏆 達成コレクション</h2>
-                <div id="reward-achieved-list" class="reward-list"></div>
+                <div id="reward-achieved-list" class="reward-list maskable-list"></div>
             </div>
 
-            <div class="section-divider" style="margin-top: 30px;">
-                <span>📖 振り返り図鑑</span>
-            </div>
+            <div class="section-divider" style="margin-top: 30px;"><span>📖 振り返り図鑑</span></div>
 
-            <!-- 月末振り返りアーカイブ -->
             <div class="panel">
                 <h2 class="panel-title">📅 月末振り返りアーカイブ</h2>
-                <div id="monthly-archive-list" class="space-y"></div>
+                <div id="monthly-archive-list" class="space-y maskable-list"></div>
             </div>
         </section>
 
-        <!-- ⚙️ 5. 設定画面 -->
         <section id="view-settings" class="view space-y">
             <div class="panel">
-                <h2 class="panel-title">🎨 アプリのテーマ</h2>
-                <!-- 余計な文字を排除したシンプルな色だけUI -->
-                <div style="display: flex; gap: 20px; justify-content: center; padding: 10px 0;">
-                    <button class="color-btn" style="background:#1d1d1f; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-stylish')"></button>
-                    <button class="color-btn" style="background:#ff85a1; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-cute')"></button>
-                    <button class="color-btn" style="background:#00ffcc; width:45px; height:45px; border-radius:50%; border:none; box-shadow:0 3px 6px rgba(0,0,0,0.2);" onclick="changeAppTheme('theme-gaming')"></button>
+                <h2 class="panel-title">🎨 アプリのテーマ着せ替え</h2>
+                <select id="theme-selector" class="form-input" onchange="changeAppTheme(this.value)">
+                    <option value="theme-stylish">🤍 スタイリッシュ (すりガラス透明感)</option>
+                    <option value="theme-cute">🌸 ポップ＆キュート (パステルふんわり)</option>
+                    <option value="theme-gaming">🎮 ゲーミング (ダーク＆ネオン発光)</option>
+                </select>
+            </div>
+
+            <div class="panel" id="color-custom-panel">
+                <h2 class="panel-title">🎨 選択中テーマのカラーカスタム</h2>
+                <div class="color-picker-grid">
+                    <div class="color-picker-row">
+                        <label>全体の背景色</label>
+                        <input type="color" id="custom-color-bg" onchange="updateCustomColor('bg', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>パネルの背景色</label>
+                        <input type="color" id="custom-color-panel" onchange="updateCustomColor('panel', this.value)">
+                    </div>
+                    <div class="color-picker-row">
+                        <label>アクセント（ボタン等）</label>
+                        <input type="color" id="custom-color-accent" onchange="updateCustomColor('accent', this.value)">
+                    </div>
                 </div>
+                <button onclick="resetCurrentThemeColors()" class="btn btn-outline w-full" style="margin-top:12px; padding:8px; font-size:11px;">このテーマの色を初期化</button>
             </div>
 
             <div class="panel" style="border: 2px solid #ff4444;">
                 <h2 class="panel-title">🔒 アプリロック設定</h2>
+                <p style="font-size:10px; opacity:0.7; margin-bottom:10px;">※起動時にPIN入力を求めます。</p>
                 <div id="lock-status-display" style="margin-bottom:10px; font-weight:bold;">状態: <span id="lock-status-text">未設定</span></div>
                 <button class="btn btn-outline w-full" id="btn-setup-lock" onclick="openLockSetupModal()">ロックを設定・変更する</button>
                 <button class="btn btn-danger w-full hidden" id="btn-remove-lock" onclick="removeLock()" style="margin-top:10px;">ロックを解除（オフにする）</button>
@@ -267,6 +256,7 @@
 
             <div class="panel" style="border: 2px solid var(--accent-color);">
                 <h2 class="panel-title">💾 究極のデータバックアップ</h2>
+                <p style="font-size:11px; opacity:0.8; margin-bottom:10px; color:#ff4444; font-weight:bold;">※iPhone(Safari)は7日間アクセスしないとデータが消去される仕様があります。必ず「ホーム画面に追加」からアプリ化してください。</p>
                 <button onclick="exportData()" class="btn btn-primary w-full" style="margin-bottom:10px;">📥 データを書き出す (保存)</button>
                 <label class="btn btn-outline w-full text-center" style="display:block; cursor:pointer;">
                     📤 ファイルからデータを復元する
@@ -274,6 +264,17 @@
                 </label>
             </div>
 
+            <div class="panel">
+                <h2 class="panel-title">☁️ クラウド同期 (GAS)</h2>
+                <input type="text" id="gas-url" class="form-input" style="font-size:12px;" placeholder="GASのURLを貼り付け">
+                <div class="button-group" style="margin-top:10px;">
+                    <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
+                    <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動同期</button>
+                </div>
+                <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+                <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
+            </div>
+            
             <div class="panel" style="background: rgba(0,0,0,0.05); border: 1px dashed #aaa;">
                 <h2 class="panel-title">🛠️ デバッグ・動作確認用</h2>
                 <button onclick="trigger25thReport(true)" class="btn btn-outline w-full" style="font-size:12px; padding:8px;">🚨 今すぐ25日振り返りをテスト実行</button>
@@ -282,7 +283,6 @@
 
     </main>
 
-    <!-- 🎉 達成おめでとうポップアップ -->
     <div id="modal-achievement" class="modal hidden" style="z-index: 4000;">
         <div class="modal-content" style="width: 320px; border: 3px solid #ffd700;">
             <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
@@ -294,13 +294,11 @@
         </div>
     </div>
 
-    <!-- 🌟 25日振り返りポップアップ -->
     <div id="modal-report-25th" class="modal hidden" style="z-index: 4000;">
         <div class="modal-content" style="width: 340px; max-height: 85vh; overflow-y: auto; border: 3px solid #ffd700;">
             <div style="font-size: 40px; margin-bottom: 5px;">🎉</div>
             <h2 style="margin-bottom: 5px;">25日 月末振り返りレポート！</h2>
             <div id="report-date-title" style="font-size: 12px; font-weight: bold; opacity: 0.6; margin-bottom: 20px;">2026/--/25</div>
-            
             <div class="report-stat-block">
                 <div class="report-stat-item">
                     <div class="report-stat-label">📈 証券口座評価額</div>
@@ -311,20 +309,18 @@
                     <div class="report-stat-value" id="report-envelopes-val">¥0</div>
                 </div>
             </div>
-
             <div id="report-comment" class="report-comment"></div>
             <button class="btn btn-primary w-full" onclick="closeModal('modal-report-25th')" style="margin-top: 15px;">素晴らしい！(閉じる)</button>
         </div>
     </div>
 
-    <!-- ✉️ 封筒作成・編集モーダル -->
     <div id="modal-envelope" class="modal hidden">
         <div class="modal-content">
             <h2 id="modal-envelope-title">新しい封筒</h2>
             <input type="hidden" id="envelope-edit-id">
             <div class="form-group">
                 <label>アイコン (絵文字)</label>
-                <input type="text" id="env-input-emoji" class="form-input" placeholder="例: 🚗, ✈️" maxlength="2" value="💰">
+                <input type="text" id="env-input-emoji" class="form-input text-center" placeholder="例: 🚗, ✈️" maxlength="4" value="💰">
             </div>
             <div class="form-group">
                 <label>封筒の名前</label>
@@ -332,7 +328,7 @@
             </div>
             <div class="form-group">
                 <label>目標金額 (円)</label>
-                <input type="number" id="env-input-target" class="form-input" placeholder="例: 100000">
+                <input type="text" id="env-input-target" class="form-input" placeholder="例: 100000" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
             <div class="form-group">
                 <label>テーマカラー</label>
@@ -353,14 +349,13 @@
         </div>
     </div>
 
-    <!-- 💰 封筒 出し入れモーダル -->
     <div id="modal-envelope-money" class="modal hidden">
         <div class="modal-content">
             <h2><span id="em-emoji"></span> <span id="em-name"></span></h2>
             <p style="font-size:12px; margin-bottom:15px;">現在の金額: <span id="em-current" style="font-weight:bold;">0</span>円</p>
             <input type="hidden" id="em-id">
             <div class="form-group">
-                <input type="number" id="em-amount" class="form-input" placeholder="金額を入力 (円)">
+                <input type="text" id="em-amount" class="form-input" placeholder="金額を入力 (円)" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
             <div class="button-group">
                 <button class="btn btn-outline" style="border-color:#ff4b4b; color:#ff4b4b;" onclick="updateEnvelopeMoney('sub')">ー 出す</button>
@@ -370,13 +365,12 @@
         </div>
     </div>
 
-    <!-- 🔒 ロック設定モーダル -->
     <div id="modal-lock-setup" class="modal hidden">
         <div class="modal-content">
             <h2>ロックの設定</h2>
             <div class="form-group">
                 <label>4桁の暗証番号 (PIN)</label>
-                <input type="number" id="setup-pin" class="form-input" placeholder="例: 1234" maxlength="4" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+                <input type="text" id="setup-pin" class="form-input" placeholder="例: 1234" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, ''); if(this.value.length>4)this.value=this.value.slice(0,4);">
             </div>
             <div class="form-group">
                 <label>秘密の質問（忘れた時の復旧用）</label>
@@ -395,7 +389,6 @@
         </div>
     </div>
 
-    <!-- 📱 下部ナビゲーション（5タブ） -->
     <nav class="bottom-nav">
         <button class="nav-btn active" data-target="view-securities"><span class="icon">📈</span><br><span class="label">証券口座</span></button>
         <button class="nav-btn" data-target="view-simulation"><span class="icon">📊</span><br><span class="label">シミュレーション</span></button>
