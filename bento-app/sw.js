@@ -1,12 +1,12 @@
-// 🔧 v2からv3へバージョンアップし、ブラウザに再キャッシュを促す
-const CACHE_NAME = 'bento-app-v3';
+const CACHE_NAME = 'bento-app-v5';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './icon.png'
+  './icon.png',
+  'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -32,7 +32,7 @@ self.addEventListener('activate', (e) => {
     self.clients.claim();
 });
 
-// ネットワークが繋がる時は最新を取得し、圏外ならキャッシュ(保存済みファイル)を表示する
+// ネットワーク優先のフェッチ戦略（通信が切れている時のみキャッシュ展開）
 self.addEventListener('fetch', (e) => {
     e.respondWith(
         fetch(e.request).catch(() => caches.match(e.request))

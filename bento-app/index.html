@@ -2,9 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" href="icon.png"> 
     <link rel="manifest" href="manifest.json">
     <title>お弁当在庫・節約管理</title>
     <link rel="stylesheet" href="style.css">
@@ -51,7 +53,7 @@
                     <label>何食分ストックを作った？</label>
                     <div class="counter-input">
                         <button onclick="changeMakeCount(-1)" class="btn-circle">-</button>
-                        <input type="number" id="make-count" value="4" class="form-input text-center" inputmode="numeric" pattern="[0-9]*">
+                        <input type="text" id="make-count" value="4" class="form-input text-center" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         <button onclick="changeMakeCount(1)" class="btn-circle">+</button>
                     </div>
                 </div>
@@ -69,9 +71,10 @@
                     <p class="text-center opacity-50 text-xs">メニュー管理でチェックした料理の材料がここに自動で並びます</p>
                 </div>
                 <div class="button-group" style="margin-top:15px;">
-                    <button onclick="copyShoppingListToClipboard()" class="btn btn-share">📋 コピー</button>
-                    <button onclick="resetShoppingList()" class="btn btn-outline" style="border-color:#ff4444; color:#ff4444;">🗑️ 買い出し完了</button>
+                    <button onclick="resetCrossedOut()" class="btn btn-outline" style="border-color:#ff9900; color:#ff9900;">🧹 済マークのみリセット</button>
+                    <button onclick="resetShoppingList()" class="btn btn-outline" style="border-color:#ff4444; color:#ff4444;">🗑️ カートを空にする</button>
                 </div>
+                <button onclick="copyShoppingListToClipboard()" class="btn btn-share w-full" style="margin-top:10px;">📋 LINEに貼る用にコピー</button>
             </div>
 
             <div class="panel">
@@ -96,7 +99,7 @@
         <section id="view-history" class="view">
             <div class="panel">
                 <h2 class="panel-title">😋 最近食べたお弁当（最新30件）</h2>
-                <p style="font-size:10px; opacity:0.6; margin-bottom:15px;">※スマホの動作を軽くするため、データは最新30件のみ自動保存されます。</p>
+                <p style="font-size:10px; opacity:0.6; margin-bottom:15px;">※データは最新30件のみ自動保存されます。</p>
                 <div class="history-list" id="history-list"></div>
             </div>
         </section>
@@ -154,17 +157,18 @@
                 <h2 class="panel-title">⚙️ 計算ルールのカスタマイズ</h2>
                 <div class="form-group">
                     <label>お弁当1食あたりの節約想定額 (円)</label>
-                    <input type="number" id="settings-save-unit" class="form-input" value="600" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" id="settings-save-unit" class="form-input" value="600" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <div class="form-group">
                     <label>冷凍してから何日経ったらアラートを出す？ (日)</label>
-                    <input type="number" id="settings-alert-days" class="form-input" value="14" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" id="settings-alert-days" class="form-input" value="14" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                 </div>
                 <button onclick="saveAppSettings()" class="btn btn-primary w-full">ルールを保存する</button>
             </div>
 
             <div class="panel" style="border: 2px solid var(--accent-color);">
                 <h2 class="panel-title">💾 究極のデータバックアップ</h2>
+                <p style="font-size:11px; opacity:0.8; margin-bottom:10px; color:#ff4444; font-weight:bold;">※iPhone(Safari)は7日間アクセスしないとデータが自動消去される仕様があります。消失を防ぐため必ず「ホーム画面に追加」を行ってください。</p>
                 <button onclick="exportData()" class="btn btn-primary w-full" style="margin-bottom:10px;">📥 データを書き出す (保存)</button>
                 <label class="btn btn-outline w-full text-center" style="display:block; cursor:pointer;">
                     📤 ファイルからデータを復元する
@@ -174,7 +178,7 @@
 
             <div class="panel">
                 <h2 class="panel-title">☁️ クラウド同期 (GAS)</h2>
-                <input type="text" id="gas-url" class="form-input text-xs" placeholder="GASのURLを貼り付け">
+                <input type="text" id="gas-url" class="form-input" style="font-size:12px;" placeholder="GASのURLを貼り付け">
                 <div class="button-group" style="margin-top:10px;">
                     <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
                     <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動同期</button>
