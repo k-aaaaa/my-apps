@@ -81,7 +81,7 @@
                 <h2 class="panel-title">✏️ メニューの登録・編集</h2>
                 <input type="hidden" id="edit-recipe-id">
                 <div class="form-row">
-                    <input type="text" id="new-recipe-emoji" placeholder="🍱" class="form-input text-center" style="width:60px;" maxlength="4">
+                    <input type="text" id="new-recipe-emoji" placeholder="🍱" class="form-input text-center" style="width:60px;">
                     <input type="text" id="new-recipe-name" placeholder="料理名（例：ハンバーグ）" class="form-input flex-1">
                 </div>
                 <div class="form-group" style="margin-top:10px;">
@@ -183,8 +183,8 @@
                     <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
                     <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動同期</button>
                 </div>
-                <label class="flex-row-label">
-                    <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)"> 操作時に自動バックアップを行う
+                <label style="display:flex; align-items:center; gap:8px; margin-top:15px; font-size:13px; font-weight:bold; cursor:pointer;">
+                    <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)" style="transform: scale(1.2);"> 操作時に自動バックアップを行う
                 </label>
                 <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
                 <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>

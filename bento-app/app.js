@@ -1,34 +1,81 @@
+// ==========================================================================
+// 🚀 データベースエンジン (IndexedDB) - AI版の強み（容量無制限化）
+// ==========================================================================
+const DB_NAME = 'BentoUniverseDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'appState';
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function saveStateToDB(stateObj) {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.put(stateObj, 'masterState');
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function loadStateFromDB() {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.get('masterState');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
+function fireConfetti(options) { if (typeof confetti === 'function') { try { confetti(options); } catch (e) {} } }
+function escapeHTML(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-// 🔧 オフライン環境でのエラー回避用 Confetti
-function fireConfetti(options) {
-    if (typeof confetti === 'function') {
-        try { confetti(options); } catch (e) {}
-    }
+// ==========================================================================
+// 💬 トースト通知 (User版の強み)
+// ==========================================================================
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:13px; font-weight:bold; z-index:9999; letter-spacing:0.5px; opacity:0; transition:opacity 0.3s;';
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.style.opacity = '1', 10);
+    setTimeout(() => {
+        t.style.opacity = '0';
+        setTimeout(() => t.remove(), 300);
+    }, 2200);
 }
 
-// 🛡️ 文字列の無害化（XSS対策）
-function escapeHTML(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
+// ==========================================================================
+// 🍱 グローバル状態 (State)
+// ==========================================================================
+let state = null;
+let GAS_URL = localStorage.getItem('bento_gas_url') || "";
+let currentCookingRecipeId = null;
 
-// アプリのデフォルト状態
 const defaultState = {
-    inventory: [],      
-    history: [],        
-    recipes: [],        
-    shoppingCart: [],   
-    crossedOut: [],     
-    savedAmount: 0,     
-    saveUnit: 600,      
-    alertDays: 14,      
-    appTheme: 'theme-stylish', 
-    autoSync: false,
+    totalSaved: 0,
+    inventory: [], 
+    recipes: [], 
+    shoppingList: [], 
+    history: [], 
+    saveUnit: 600,
+    alertDays: 14,
+    appTheme: 'theme-stylish',
     splashTime: 1200,
+    autoSync: false,
     customColors: {
         'theme-stylish': { bg: '#f4f5f7', panel: 'rgba(255, 255, 255, 0.6)', accent: '#1d1d1f' },
         'theme-cute': { bg: '#fff5f5', panel: 'rgba(255, 255, 255, 0.85)', accent: '#ff85a1' },
@@ -36,22 +83,62 @@ const defaultState = {
     }
 };
 
-let state = null;
-let GAS_URL = localStorage.getItem('bento_gas_url') || "";
-let currentRecipe = null; 
+window.addEventListener('DOMContentLoaded', async () => {
+    // 🚚 データ移行（マイグレーション）処理：古いlocalStorageがあれば救出する
+    const oldLocalData = localStorage.getItem('bento_universe_data');
+    if (oldLocalData) {
+        try {
+            const parsedOld = JSON.parse(oldLocalData);
+            // 古い設計(User版)の shoppingCart と crossedOut を新しい shoppingList に変換
+            if (parsedOld.shoppingCart && parsedOld.crossedOut) {
+                parsedOld.shoppingList = [];
+                let allIngs = [];
+                parsedOld.shoppingCart.forEach(id => {
+                    const r = parsedOld.recipes.find(x => x.id === id);
+                    if(r && r.ingredients) allIngs.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
+                    if(r) r.inShopping = true;
+                });
+                allIngs = [...new Set(allIngs)];
+                allIngs.forEach(ing => {
+                    parsedOld.shoppingList.push({ name: ing, crossed: parsedOld.crossedOut.includes(ing) });
+                });
+            }
+            if (parsedOld.savedAmount !== undefined) parsedOld.totalSaved = parsedOld.savedAmount;
 
-window.addEventListener('DOMContentLoaded', () => {
-    // ローカルストレージからロード
+            await saveStateToDB({ ...defaultState, ...parsedOld });
+            localStorage.removeItem('bento_universe_data'); // 移行完了後に削除
+        } catch(e) { console.error("データ移行エラー", e); }
+    }
+
     try {
-        const localData = localStorage.getItem('bento_universe_data');
-        state = localData ? JSON.parse(localData) : JSON.parse(JSON.stringify(defaultState));
-        // 不足している深い階層の補完
-        state = { ...defaultState, ...state };
-    } catch(e) {
+        const storedState = await loadStateFromDB();
+        state = storedState ? { ...defaultState, ...storedState } : JSON.parse(JSON.stringify(defaultState));
+        if (!state.shoppingList) state.shoppingList = [];
+        if (!state.history) state.history = [];
+    } catch (e) {
         state = JSON.parse(JSON.stringify(defaultState));
     }
 
     applyCurrentThemeAndColors();
+    document.getElementById('gas-url').value = GAS_URL;
+    if (document.getElementById('settings-auto-sync')) document.getElementById('settings-auto-sync').checked = state.autoSync;
+    if (document.getElementById('settings-save-unit')) document.getElementById('settings-save-unit').value = state.saveUnit;
+    if (document.getElementById('settings-alert-days')) document.getElementById('settings-alert-days').value = state.alertDays;
+    if (document.getElementById('settings-splash-time')) document.getElementById('settings-splash-time').value = state.splashTime;
+
+    // 💰 手動微調整イベント (User版の強み)
+    document.getElementById('saved-money').addEventListener('click', () => {
+        vibrate();
+        const val = prompt("【節約金額の手動微調整】\n現在の合計金額を直接変更したい場合は数値を入力:", state.totalSaved);
+        if (val !== null && val.trim() !== "") {
+            const parsed = parseInt(val.replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(parsed)) {
+                state.totalSaved = Math.max(0, parsed);
+                saveLocal(); 
+                showToast("💰 金額を変更しました");
+            }
+        }
+    });
 
     const imgData = localStorage.getItem('bento_welcome_img');
     const splashTime = state.splashTime || 1200;
@@ -60,83 +147,63 @@ window.addEventListener('DOMContentLoaded', () => {
         const customImg = document.getElementById('splash-custom');
         customImg.src = imgData;
         customImg.classList.remove('hidden');
+        if(document.getElementById('welcome-img-preview')) {
+            document.getElementById('welcome-img-preview').src = imgData;
+            document.getElementById('welcome-img-preview-container').classList.remove('hidden');
+        }
     }
-    
-    // 🔙 初期タブ判定（History API対応）
+
     const initialTab = location.hash ? location.hash.replace('#', '') : 'view-home';
 
     setTimeout(() => {
         const splash = document.getElementById('splash');
         if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
         switchTab(initialTab, false);
+        updateUI();
     }, splashTime);
-
-    render();
 });
 
-// 🔙 スワイプ戻る防止 (History APIの監視)
+// 🔙 History API (タブ切り替え)
 window.addEventListener('popstate', (e) => {
     const target = e.state ? e.state.tab : 'view-home';
     switchTab(target, false);
 });
 
-// 🔙 タブ切り替えロジック
 function switchTab(targetId, pushHistory = true) {
     const targetEl = document.getElementById(targetId);
     if (!targetEl) return;
-
+    
     if(document.getElementById('edit-recipe-id') && document.getElementById('edit-recipe-id').value !== "") {
         cancelEditRecipe();
     }
 
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     targetEl.classList.add('active');
-    const navBtn = document.querySelector(`.bottom-nav button[data-target="${targetId}"]`);
+    
+    const navBtn = document.querySelector(`.nav-btn[data-target="${targetId}"]`);
     if (navBtn) navBtn.classList.add('active');
 
-    if (pushHistory) {
-        history.pushState({ tab: targetId }, "", "#" + targetId);
-    }
+    if (pushHistory) history.pushState({ tab: targetId }, "", "#" + targetId);
 }
 
-document.querySelectorAll('.bottom-nav .nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        vibrate();
-        switchTab(btn.dataset.target, true);
-    });
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => { vibrate(); switchTab(btn.dataset.target, true); });
 });
 
-function saveLocal() {
-    localStorage.setItem('bento_universe_data', JSON.stringify(state));
-    render();
-    if (state.autoSync) cloudSyncSilent();
-}
-
-function showToast(msg) {
-    const t = document.createElement('div');
-    t.style = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 20px; border-radius:30px; font-size:13px; font-weight:bold; z-index:9999; letter-spacing:0.5px;';
-    t.innerText = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2200);
+async function saveLocal() {
+    try { await saveStateToDB(state); updateUI(); if(state.autoSync) cloudSyncSilent(); } catch (e) { alert("⚠️ データ保存エラー。"); }
 }
 
 // ==========================================================================
-// 🎨 カラーテーマ制御
+// 🎨 テーマ・設定関連
 // ==========================================================================
 function applyCurrentThemeAndColors() {
     const theme = state.appTheme || 'theme-stylish';
-    const themeSel = document.getElementById('theme-selector');
-    if (themeSel) themeSel.value = theme;
-
-    if (!state.customColors[theme]) {
-        state.customColors[theme] = defaultState.customColors[theme] || defaultState.customColors['theme-stylish'];
-    }
-
+    if (document.getElementById('theme-selector')) document.getElementById('theme-selector').value = theme;
+    if (!state.customColors[theme]) state.customColors[theme] = defaultState.customColors['theme-stylish'];
     const colors = state.customColors[theme];
     const root = document.documentElement;
-
     root.style.setProperty('--bg-color', colors.bg);
     root.style.setProperty('--panel-bg', colors.panel);
     root.style.setProperty('--accent-color', colors.accent);
@@ -154,55 +221,245 @@ function applyCurrentThemeAndColors() {
         return (match && match.length === 4) ? "#" + ("0" + parseInt(match[1],10).toString(16)).slice(-2) + ("0" + parseInt(match[2],10).toString(16)).slice(-2) + ("0" + parseInt(match[3],10).toString(16)).slice(-2) : rgba;
     };
 
-    const pickerBg = document.getElementById('custom-color-bg');
-    const pickerPanel = document.getElementById('custom-color-panel');
-    const pickerAccent = document.getElementById('custom-color-accent');
-    if (pickerBg) pickerBg.value = rgbaToHex(colors.bg);
-    if (pickerPanel) pickerPanel.value = rgbaToHex(colors.panel);
-    if (pickerAccent) pickerAccent.value = rgbaToHex(colors.accent);
+    if (document.getElementById('custom-color-bg')) document.getElementById('custom-color-bg').value = rgbaToHex(colors.bg);
+    if (document.getElementById('custom-color-panel')) document.getElementById('custom-color-panel').value = rgbaToHex(colors.panel);
+    if (document.getElementById('custom-color-accent')) document.getElementById('custom-color-accent').value = rgbaToHex(colors.accent);
 }
 
-function updateCustomColor(type, value) {
-    const theme = state.appTheme || 'theme-stylish';
-    state.customColors[theme][type] = value;
-    applyCurrentThemeAndColors();
-    saveLocal();
-}
+function updateCustomColor(type, value) { state.customColors[state.appTheme][type] = value; applyCurrentThemeAndColors(); saveLocal(); }
+function resetCurrentThemeColors() { vibrate(); if(!confirm("初期色に戻しますか？")) return; state.customColors[state.appTheme] = {...defaultState.customColors[state.appTheme]}; applyCurrentThemeAndColors(); saveLocal(); showToast("色をリセットしました");}
+function changeAppTheme(themeName) { vibrate(); state.appTheme = themeName; applyCurrentThemeAndColors(); saveLocal(); }
 
-function resetCurrentThemeColors() {
+function saveAppSettings() {
     vibrate();
-    if(!confirm("本当にこのテーマの色を初期状態に戻しますか？")) return;
-    const theme = state.appTheme || 'theme-stylish';
-    state.customColors[theme] = { ...defaultState.customColors[theme] };
-    applyCurrentThemeAndColors();
+    const unit = parseInt(document.getElementById('settings-save-unit').value, 10);
+    const alertDays = parseInt(document.getElementById('settings-alert-days').value, 10);
+    if (!isNaN(unit)) state.saveUnit = unit;
+    if (!isNaN(alertDays)) state.alertDays = alertDays;
     saveLocal();
-    showToast("テーマの色を初期化しました！");
+    showToast("⚙️ ルールを保存しました！");
 }
 
-function changeAppTheme(themeName) {
+function saveWelcomeImage(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 500; let scaleSize = 1;
+            if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+            canvas.width = img.width * scaleSize; canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.7);
+            try {
+                localStorage.setItem('bento_welcome_img', base64);
+                document.getElementById('welcome-img-preview').src = base64;
+                document.getElementById('welcome-img-preview-container').classList.remove('hidden');
+                showToast("🖼️ お出迎え画像を登録しました！");
+            } catch(err) { alert("画像サイズが大きすぎます。"); }
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+function clearWelcomeImage() { vibrate(); localStorage.removeItem('bento_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("消去しました"); }
+function saveSplashTime(val) { vibrate(); state.splashTime = parseInt(val); saveLocal(); }
+
+// ==========================================================================
+// ☁️ クラウド同期 & データ復旧
+// ==========================================================================
+function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('bento_gas_url', GAS_URL); showToast("☁️ GASのURLを保存しました。"); }
+function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
+function triggerManualSync() {
+    vibrate(); if (!GAS_URL) return showToast("⚠️ GASのURLを設定してください");
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "text/plain" } }).then(() => showToast("☁️ バックアップ成功！")).catch(() => showToast("⚠️ 通信失敗"));
+}
+function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "text/plain" } }).catch(()=>{}); }
+
+function exportData() { vibrate(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], {type: "application/json"})); a.download = `BENTO_BACKUP_${Date.now()}.json`; a.click(); }
+function importData(e) {
+    vibrate(); const file = e.target.files[0]; if(!file) return;
+    if(!confirm("⚠️ データを上書き復元しますか？")) { e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+        try {
+            state = { ...defaultState, ...JSON.parse(ev.target.result) };
+            await saveLocal(); alert("✨ 復元成功！再起動します。"); location.reload();
+        } catch(err) { alert("ファイルが壊れています"); e.target.value = ''; }
+    };
+    reader.readAsText(file);
+}
+function resetData() { vibrate(); if(confirm("本当に全データを初期化しますか？")) { indexedDB.deleteDatabase(DB_NAME); localStorage.removeItem('bento_gas_url'); location.reload(); } }
+
+// ==========================================================================
+// ✏️ メニュー(レシピ)管理
+// ==========================================================================
+function saveRecipe() {
     vibrate();
-    state.appTheme = themeName;
-    applyCurrentThemeAndColors();
+    const idVal = document.getElementById('edit-recipe-id').value;
+    const emojiStr = document.getElementById('new-recipe-emoji').value || "🍱";
+    const emoji = Array.from(emojiStr)[0]; // 絵文字の千切れ防止 (AI版の強み)
+    const name = document.getElementById('new-recipe-name').value.trim();
+    const ingStr = document.getElementById('new-recipe-ing').value.trim();
+
+    if (!name) return alert("料理名を入力してください");
+    const ingredients = ingStr ? ingStr.split(/[,、\s]+/).map(s => s.trim()).filter(s => s) : [];
+
+    if (idVal) {
+        const recipe = state.recipes.find(r => r.id == idVal);
+        if (recipe) { recipe.emoji = emoji; recipe.name = name; recipe.ingredients = ingredients; }
+    } else {
+        state.recipes.unshift({ id: Date.now(), emoji, name, ingredients, inShopping: false });
+    }
+    
+    cancelEditRecipe(); saveLocal(); showToast(idVal ? "更新しました" : "追加しました");
+}
+
+function editRecipe(id) {
+    vibrate(); const recipe = state.recipes.find(r => r.id === id); if (!recipe) return;
+    document.getElementById('edit-recipe-id').value = recipe.id;
+    document.getElementById('new-recipe-emoji').value = recipe.emoji;
+    document.getElementById('new-recipe-name').value = recipe.name;
+    document.getElementById('new-recipe-ing').value = recipe.ingredients.join(", ");
+    document.getElementById('save-recipe-btn').innerText = "上書き更新";
+    document.getElementById('cancel-recipe-btn').classList.remove('hidden');
+    document.getElementById('view-menu').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEditRecipe() {
+    vibrate();
+    document.getElementById('edit-recipe-id').value = "";
+    document.getElementById('new-recipe-emoji').value = "";
+    document.getElementById('new-recipe-name').value = "";
+    document.getElementById('new-recipe-ing').value = "";
+    document.getElementById('save-recipe-btn').innerText = "メニューに追加";
+    document.getElementById('cancel-recipe-btn').classList.add('hidden');
+}
+
+function deleteRecipe(id) {
+    vibrate();
+    if (confirm("このメニューを削除しますか？\n(※現在のストックは消えません)")) {
+        const recipe = state.recipes.find(r => r.id === id);
+        if (recipe && recipe.inShopping) {
+            recipe.ingredients.forEach(ing => {
+                state.shoppingList = state.shoppingList.filter(item => item.name !== ing);
+            });
+        }
+        state.recipes = state.recipes.filter(r => r.id !== id);
+        if (document.getElementById('edit-recipe-id').value == id) cancelEditRecipe();
+        saveLocal();
+    }
+}
+
+function toggleShoppingRecipe(id, checked) {
+    vibrate(); const recipe = state.recipes.find(r => r.id === id); if(!recipe) return;
+    recipe.inShopping = checked;
+    if (checked) {
+        recipe.ingredients.forEach(ing => {
+            if (!state.shoppingList.find(i => i.name === ing)) state.shoppingList.push({ name: ing, crossed: false });
+        });
+    } else {
+        recipe.ingredients.forEach(ing => {
+            state.shoppingList = state.shoppingList.filter(i => i.name !== ing);
+        });
+    }
     saveLocal();
 }
 
 // ==========================================================================
-// 🎰 アプリコア機能（ルーレット、在庫、調理、買い物）
+// 🛒 買い物リスト管理
+// ==========================================================================
+function toggleShoppingItem(name) { vibrate(); const item = state.shoppingList.find(i => i.name === name); if(item) { item.crossed = !item.crossed; saveLocal(); } }
+
+function resetCrossedOut() { 
+    vibrate(); 
+    if(!state.shoppingList.some(i => i.crossed)) return showToast("済マークはまだありません");
+    if(confirm("買ったもの（済マーク）だけをリセットし、来週も同じメニューをリストに残しますか？")) {
+        state.shoppingList = state.shoppingList.filter(i => !i.crossed); 
+        saveLocal(); 
+        showToast("🧹 済マークを消去しました");
+    }
+}
+
+function resetShoppingList() { 
+    vibrate(); 
+    if(state.shoppingList.length === 0) return showToast("リストは既に空です");
+    if(confirm("カートをすべて空にしますか？")) { 
+        state.shoppingList = []; 
+        state.recipes.forEach(r => r.inShopping = false); 
+        saveLocal(); 
+        showToast("🗑️ カートを空にしました");
+    } 
+}
+
+function copyShoppingListToClipboard() {
+    vibrate(); 
+    const items = state.shoppingList.filter(i => !i.crossed).map(i => "・" + i.name).join("\n");
+    if(!items) return showToast("買うものがありません");
+    const text = `🛒 週末お買い物メモ\n${items}`;
+    navigator.clipboard.writeText(text).then(() => showToast("📋 LINE貼り付け用にコピーしました！")).catch(() => prompt("コピーしてください:", text));
+}
+
+// ==========================================================================
+// 🍳 調理 (ストック作成)
+// ==========================================================================
+function startCooking(id) {
+    vibrate(); const recipe = state.recipes.find(r => r.id === id); if(!recipe) return;
+    currentCookingRecipeId = id;
+    document.getElementById('cooking-emoji').innerText = recipe.emoji;
+    document.getElementById('cooking-name').innerText = recipe.name;
+    document.getElementById('make-count').value = 4;
+    document.getElementById('cooking-panel').classList.remove('hidden');
+    document.getElementById('recipe-selection').classList.add('hidden');
+}
+
+function changeMakeCount(delta) {
+    vibrate(); const input = document.getElementById('make-count');
+    let val = parseInt(input.value, 10) || 0;
+    val = Math.max(1, val + delta); input.value = val;
+}
+
+function cancelCooking() {
+    vibrate(); currentCookingRecipeId = null;
+    document.getElementById('cooking-panel').classList.add('hidden');
+    document.getElementById('recipe-selection').classList.remove('hidden');
+}
+
+function finishCooking() {
+    vibrate(); if(!currentCookingRecipeId) return;
+    const count = parseInt(document.getElementById('make-count').value, 10) || 0;
+    if (count <= 0) return alert("1食以上で作ってね");
+    
+    const recipe = state.recipes.find(r => r.id === currentCookingRecipeId);
+    
+    // User版の強み: Timestampや名前を記録して堅牢に
+    state.inventory.push({ 
+        id: Date.now(), 
+        recipeId: currentCookingRecipeId, 
+        name: recipe ? recipe.name : "不明",
+        emoji: recipe ? recipe.emoji : "🍱",
+        count: count, 
+        timestamp: Date.now() 
+    });
+    
+    cancelCooking(); saveLocal();
+    fireConfetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    setTimeout(() => { switchTab('view-home'); }, 600);
+}
+
+// ==========================================================================
+// 🍱 食べる＆捨てる (ストック消費) & ルーレット & 巻き戻し(User版の強み)
 // ==========================================================================
 function spinRoulette() {
     vibrate();
-    if(state.inventory.length === 0) {
-        return alert("冷凍ストックがありません！\nまずは「作った」タブからお弁当を追加してね🍳");
-    }
-    
     let tickets = [];
     state.inventory.forEach(item => {
         for(let i=0; i<item.count; i++) { tickets.push(item); }
     });
-    if(tickets.length === 0) return alert("ストックが0食です！");
+    if(tickets.length === 0) return alert("ストックがありません！作ってね！");
 
     const picked = tickets[Math.floor(Math.random() * tickets.length)];
-    
     fireConfetti({ particleCount: 50, spread: 40, origin: { y: 0.6 } });
     setTimeout(() => {
         alert(`🎲 今日の運勢が導いたお弁当は…\n\n【 ${picked.emoji} ${picked.name} 】\n\nこれに決定！美味しく食べてね！😋`);
@@ -217,14 +474,14 @@ function adjustInventory(id, delta, isEaten = false) {
     if (isEaten) {
         item.count += delta; 
         const currentSaveUnit = parseInt(state.saveUnit) || 600;
-        state.savedAmount = (state.savedAmount || 0) + currentSaveUnit;
+        state.totalSaved += currentSaveUnit;
         
+        // 詳細な履歴保存 (User版の強み)
         state.history.unshift({
             id: Date.now(),
-            date: new Date().toLocaleDateString('ja-JP'),
+            date: new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
             name: item.name,
             emoji: item.emoji,
-            count: 1,
             savedValue: currentSaveUnit, 
             snapshotRecipeId: item.recipeId,
             snapshotTimestamp: item.timestamp 
@@ -233,8 +490,9 @@ function adjustInventory(id, delta, isEaten = false) {
         if (state.history.length > 30) state.history = state.history.slice(0, 30);
         
         showToast(`😋 食べました！(＋${currentSaveUnit}円)`);
-        fireConfetti({ particleCount: 30, spread: 40, origin: { y: 0.8 } });
+        fireConfetti({ particleCount: 60, spread: 50, origin: { y: 0.8 } });
     } else {
+        // ただの在庫増減 (＋－ボタン)
         item.count += delta;
         showToast(`📦 ストック数を修正しました`);
     }
@@ -251,7 +509,7 @@ function revokeEatenHistory(historyId) {
     const subtractValue = histItem.savedValue || (parseInt(state.saveUnit) || 600);
 
     if (confirm(`🍱 食べた記録を取り消しますか？\n\n・節約金額から ${subtractValue}円 引かれます。\n・「${histItem.name}」の在庫が1食分復活します。`)) {
-        state.savedAmount = Math.max(0, (state.savedAmount || 0) - subtractValue);
+        state.totalSaved = Math.max(0, state.totalSaved - subtractValue);
         let stockItem = state.inventory.find(i => i.recipeId === histItem.snapshotRecipeId && i.timestamp === histItem.snapshotTimestamp);
         
         if (stockItem) {
@@ -268,356 +526,146 @@ function revokeEatenHistory(historyId) {
     }
 }
 
-function editSavedAmountManual() {
-    vibrate();
-    const val = prompt("【節約金額の手動微調整】\n現在の合計金額を直接変更したい場合は数値を入力:", state.savedAmount);
-    if (val !== null && val.trim() !== "") {
-        const parsed = parseInt(val.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(parsed)) {
-            state.savedAmount = Math.max(0, parsed);
-            saveLocal(); 
-            showToast("💰 金額を変更しました");
-        }
-    }
-}
-
-function startCooking(recipeId) {
-    vibrate();
-    currentRecipe = state.recipes.find(r => r.id === recipeId);
-    if (!currentRecipe) return;
-
-    document.getElementById('recipe-selection').classList.add('hidden');
-    document.getElementById('cooking-panel').classList.remove('hidden');
-    document.getElementById('cooking-emoji').innerText = currentRecipe.emoji || "🍱";
-    document.getElementById('cooking-name').innerText = currentRecipe.name;
-    document.getElementById('make-count').value = currentRecipe.lastCount || 4;
-}
-
-function changeMakeCount(delta) {
-    vibrate();
-    const input = document.getElementById('make-count');
-    input.value = Math.max(1, (parseInt(input.value) || 0) + delta);
-}
-
-function cancelCooking() {
-    vibrate();
-    currentRecipe = null; 
-    document.getElementById('recipe-selection').classList.remove('hidden');
-    document.getElementById('cooking-panel').classList.add('hidden');
-}
-
-function finishCooking() {
-    vibrate();
-    if (!currentRecipe) return;
-
-    const inputVal = document.getElementById('make-count').value;
-    const count = Math.max(1, parseInt(inputVal.replace(/[^0-9]/g, ''), 10) || 4);
-    
-    currentRecipe.lastCount = count;
-    state.inventory.push({
-        id: Date.now(), recipeId: currentRecipe.id, name: currentRecipe.name,
-        emoji: currentRecipe.emoji, count: count, timestamp: Date.now()
-    });
-    
-    currentRecipe = null; 
-    document.getElementById('recipe-selection').classList.remove('hidden');
-    document.getElementById('cooking-panel').classList.add('hidden');
-    
-    saveLocal();
-    showToast(`✨ストックを追加しました！`);
-    switchTab('view-home', true);
-}
-
-function saveRecipe() {
-    vibrate();
-    const id = document.getElementById('edit-recipe-id').value;
-    const emojiInput = document.getElementById('new-recipe-emoji').value.trim() || "🍱";
-    const emoji = emojiInput.substring(0, 4); 
-    const name = document.getElementById('new-recipe-name').value.trim();
-    const ing = document.getElementById('new-recipe-ing').value.trim();
-    if (!name) return alert("料理名を入力してください！");
-
-    if (state.recipes.some(r => r.name === name && r.id != id)) {
-        return alert("同じ名前のメニューが既に登録されています！");
-    }
-
-    if (id) {
-        const r = state.recipes.find(x => x.id == id);
-        if(r) { r.name = name; r.emoji = emoji; r.ingredients = ing; }
-    } else {
-        state.recipes.push({ id: Date.now(), name, emoji, ingredients: ing, lastCount: 4 });
-    }
-    cancelEditRecipe(); saveLocal();
-}
-
-function editRecipe(id) {
-    const r = state.recipes.find(x => x.id === id); if(!r) return;
-    document.getElementById('edit-recipe-id').value = r.id;
-    document.getElementById('new-recipe-emoji').value = r.emoji;
-    document.getElementById('new-recipe-name').value = r.name;
-    document.getElementById('new-recipe-ing').value = r.ingredients;
-    document.getElementById('save-recipe-btn').innerText = "メニューを更新";
-    document.getElementById('cancel-recipe-btn').classList.remove('hidden');
-}
-
-function cancelEditRecipe() {
-    document.getElementById('edit-recipe-id').value = ""; document.getElementById('new-recipe-emoji').value = "🍱"; document.getElementById('new-recipe-name').value = ""; document.getElementById('new-recipe-ing').value = "";
-    document.getElementById('save-recipe-btn').innerText = "メニューに追加"; document.getElementById('cancel-recipe-btn').classList.add('hidden');
-}
-
-function deleteRecipe(id) {
-    if (!confirm("このメニューを削除しますか？(ストックは消えません)")) return;
-    if (currentRecipe && currentRecipe.id === id) cancelCooking(); 
-    
-    state.recipes = state.recipes.filter(r => r.id !== id);
-    state.shoppingCart = state.shoppingCart.filter(cartId => cartId !== id); 
-    
-    let allActiveIngs = [];
-    state.recipes.forEach(r => {
-        if(r.ingredients) allActiveIngs.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
-    });
-    state.crossedOut = state.crossedOut.filter(ing => allActiveIngs.includes(ing));
-    saveLocal();
-}
-
-function toggleShopCart(recipeId) {
-    if (state.shoppingCart.includes(recipeId)) state.shoppingCart = state.shoppingCart.filter(id => id !== recipeId);
-    else state.shoppingCart.push(recipeId);
-    saveLocal();
-}
-
-function toggleIng(ing) {
-    if (state.crossedOut.includes(ing)) state.crossedOut = state.crossedOut.filter(i => i !== ing);
-    else state.crossedOut.push(ing);
-    saveLocal();
-}
-
-function copyShoppingListToClipboard() {
-    vibrate();
-    let text = "【週末お買い物リスト】\n";
-    let allIngs = [];
-    state.shoppingCart.forEach(id => {
-        const r = state.recipes.find(x => x.id === id);
-        if(r && r.ingredients) allIngs.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
-    });
-    allIngs = [...new Set(allIngs)];
-    if (allIngs.length === 0) return showToast("リストが空っぽです");
-    
-    allIngs.forEach(ing => {
-        text += `${state.crossedOut.includes(ing) ? " ■ [済] " : " □ "}${ing}\n`;
-    });
-    
-    navigator.clipboard.writeText(text).then(() => {
-        showToast("📋 LINE貼り付け用にコピーしました！");
-    }).catch(() => prompt("手動でコピーしてください:", text));
-}
-
-function resetCrossedOut() {
-    vibrate();
-    if (state.crossedOut.length === 0) return showToast("済マークはまだありません");
-    if (confirm("買ったもの（済マーク）だけをリセットし、来週も同じメニューをリストに残しますか？")) {
-        state.crossedOut = [];
-        saveLocal();
-        showToast("🧹 済マークをリセットしました！");
-    }
-}
-
-function resetShoppingList() {
-    vibrate();
-    if(state.shoppingCart.length === 0) return showToast("リストは既に空です");
-    if(confirm("カートを完全に空（リセット）にしてよろしいですか？")) {
-        state.shoppingCart = []; state.crossedOut = []; saveLocal();
-        showToast("🗑️ カートを空にしました！");
-    }
-}
-
-function saveWelcomeImage(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 400; canvas.height = img.height * (400 / img.width);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            try { 
-                localStorage.setItem('bento_welcome_img', canvas.toDataURL('image/jpeg', 0.7)); 
-                document.getElementById('welcome-img-preview').src = canvas.toDataURL('image/jpeg', 0.7); 
-                document.getElementById('welcome-img-preview-container').classList.remove('hidden'); 
-                showToast("🖼️ お出迎え画像を登録しました！"); 
-            } catch(err) { alert("⚠️ 容量オーバー。別の画像にしてください。"); }
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function clearWelcomeImage() { localStorage.removeItem('bento_welcome_img'); document.getElementById('welcome-img-preview-container').classList.add('hidden'); showToast("画像を消去しました"); }
-function saveSplashTime(val) { state.splashTime = parseInt(val); saveLocal(); }
-
-function saveAppSettings() { 
+function discardBento(invId) {
     vibrate(); 
-    state.saveUnit = parseInt(document.getElementById('settings-save-unit').value.replace(/[^0-9]/g, '')) || 600; 
-    state.alertDays = parseInt(document.getElementById('settings-alert-days').value.replace(/[^0-9]/g, '')) || 14; 
-    saveLocal(); showToast("⚙️ 設定を保存しました"); 
-}
-
-function saveGasUrl() { GAS_URL = document.getElementById('gas-url').value.trim(); localStorage.setItem('bento_gas_url', GAS_URL); showToast("☁️ 連携URLを保存しました"); }
-function toggleAutoSync(checked) { state.autoSync = checked; saveLocal(); }
-
-function triggerManualSync() {
-    vibrate(); if (!GAS_URL) return showToast("⚠️ 先に設定でGASのURLを登録してください");
-    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" } })
-    .then(() => showToast("☁️ 手動バックアップが完了しました！"))
-    .catch(() => showToast("⚠️ 通信に失敗しました。"));
-}
-function cloudSyncSilent() { if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "application/json" } }).catch(() => {}); }
-
-function exportData() {
-    vibrate(); const blob = new Blob([JSON.stringify(state)], {type: "application/json"});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `BENTO_APP_BACKUP_${Date.now()}.json`; a.click();
-}
-
-// 🛡️ 壊れたJSONの復元対策・バリデーション完全実装版
-function importData(e) {
-    vibrate(); const file = e.target.files[0]; if(!file) return;
-    if(!confirm("⚠️ 警告\nデータを読み込むと現在の状態は完全に上書きされます。よろしいですか？")) { e.target.value = ''; return; }
-
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-        try {
-            const importedState = JSON.parse(ev.target.result);
-            if(importedState && typeof importedState === 'object') {
-                // 堅牢なフォールバック補完
-                state = { ...defaultState, ...importedState };
-                if (!Array.isArray(state.inventory)) state.inventory = [];
-                if (!Array.isArray(state.recipes)) state.recipes = [];
-                if (!Array.isArray(state.history)) state.history = [];
-                saveLocal();
-                alert("✨ データの復元に成功しました！アプリをリロードします。");
-                location.reload();
-            } else { alert("⚠️ 不正なバックアップファイルです。"); }
-        } catch(err) { alert("⚠️ 読み込みエラー: ファイルが破損しています。"); }
-    };
-    reader.readAsText(file);
-}
-
-function resetData() { 
-    if(!confirm("本当に全てのデータを初期化しますか？")) return; 
-    localStorage.removeItem('bento_universe_data'); localStorage.removeItem('bento_welcome_img'); localStorage.removeItem('bento_gas_url');
-    location.reload(); 
+    if(!confirm("⚠️ このストックを1食分、破棄（捨てる）しますか？\n（※節約金額は加算されません）")) return;
+    const item = state.inventory.find(i => i.id === invId); if(!item) return;
+    item.count--;
+    if (item.count <= 0) state.inventory = state.inventory.filter(i => i.id !== invId);
+    saveLocal();
+    showToast("🗑 1食分を破棄しました");
 }
 
 // ==========================================================================
-// 🎨 レンダー(描画)エンジン
+// 🔄 UIの再描画 (Render) - AI版の強み(部品ごとの安全な描画)
 // ==========================================================================
-function render() {
+function updateUI() {
+    document.getElementById('saved-money').innerText = `¥${state.totalSaved.toLocaleString()}`;
+    const totalCount = state.inventory.reduce((sum, item) => sum + item.count, 0);
+    document.getElementById('total-count').innerText = totalCount;
+
+    renderInventory();
+    renderRecipes();
+    renderShoppingList();
+    renderHistory();
+}
+
+function renderInventory() {
+    const list = document.getElementById('inventory-list'); if(!list) return;
+    list.innerHTML = "";
+    if (state.inventory.length === 0) { list.innerHTML = `<p style="text-align:center; opacity:0.5; padding:20px; font-size:12px; font-weight:bold;">ストックが空っぽです！<br>「作った」タブから補充しよう🍱</p>`; return; }
+
     const now = Date.now();
-    document.getElementById('saved-money').innerText = "¥" + (state.savedAmount || 0).toLocaleString();
-    document.getElementById('saved-money').onclick = editSavedAmountManual;
+    const sorted = [...state.inventory].sort((a, b) => a.timestamp - b.timestamp); // 古い順
 
-    const invList = document.getElementById('inventory-list'); invList.innerHTML = '';
-    let totalStockCount = 0;
-    let sortedInv = [...state.inventory].sort((a,b) => a.timestamp - b.timestamp);
-    
-    if(sortedInv.length === 0) {
-        invList.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.5; font-weight:bold; font-size:15px;">冷凍ストックがありません。<br>下の「作った」から追加してね！🍳</div>';
-    }
+    sorted.forEach(item => {
+        const daysPassed = item.timestamp ? Math.floor((now - item.timestamp) / 86400000) : 0;
+        let badgeHtml = `<span style="font-size:11px; opacity:0.6; font-weight:bold;">${daysPassed === 0 ? "今日" : daysPassed + "日前"}に作成</span>`;
+        if (daysPassed >= state.alertDays) {
+            badgeHtml = `<span class="badge-danger">⚠️ ${daysPassed}日経過！危険かも</span>`;
+        } else if (daysPassed >= state.alertDays - 3) {
+            badgeHtml = `<span class="badge-warning">⚡️ 早く食べて！</span>`;
+        }
 
-    sortedInv.forEach(item => {
-        totalStockCount += item.count;
-        const daysOld = item.timestamp ? Math.floor((now - item.timestamp) / 86400000) : 0;
-        let badgeHtml = ''; const limit = state.alertDays || 14;
-        if (daysOld >= limit) badgeHtml = `<span class="badge-danger">⏳ ${daysOld}日経過・早めに！</span>`;
-        else if (daysOld >= limit / 2) badgeHtml = `<span class="badge-warning">🕒 ${daysOld}日経過</span>`;
-
-        invList.innerHTML += `
-            <div class="bento-card">
-                <div class="bento-info">
-                    <div class="bento-emoji-wrapper">${escapeHTML(item.emoji || "🍱")}</div>
-                    <div class="bento-details">
-                        <div class="bento-name-row"><span class="bento-name">${escapeHTML(item.name)}</span>${badgeHtml}</div>
-                        <div class="bento-qty-control">
-                            <button onclick="adjustInventory(${item.id}, -1, false)" class="btn-circle">-</button>
-                            <span class="qty-display">${item.count}</span>
-                            <button onclick="adjustInventory(${item.id}, 1, false)" class="btn-circle">+</button>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="adjustInventory(${item.id}, -1, true)" class="btn-eat">食べた</button>
-            </div>
-        `;
-    });
-    document.getElementById('total-count').innerText = totalStockCount;
-
-    const recList = document.getElementById('recipe-selection'); recList.innerHTML = '';
-    if(state.recipes.length === 0) recList.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; opacity:0.5; font-weight:bold; font-size:14px;">「メニュー」タブから料理を登録してください✏️</div>';
-    state.recipes.forEach(recipe => {
-        recList.innerHTML += `<button onclick="startCooking(${recipe.id})"><span style="font-size:30px;">${escapeHTML(recipe.emoji || "🍱")}</span><div style="font-weight:900; font-size:15px;">${escapeHTML(recipe.name)}</div></button>`;
-    });
-
-    const editList = document.getElementById('recipe-edit-list'); editList.innerHTML = '';
-    state.recipes.forEach(recipe => {
-        editList.innerHTML += `
-            <div class="recipe-edit-row">
-                <div style="display:flex;align-items:center;gap:6px;"><span>${escapeHTML(recipe.emoji || "🍱")}</span> ${escapeHTML(recipe.name)}</div>
-                <div style="display:flex;gap:4px;">
-                    <button onclick="editRecipe(${recipe.id})" style="color:var(--accent-color); background:none; border:none; font-weight:bold; cursor:pointer;">編集</button>
-                    <button onclick="deleteRecipe(${recipe.id})" style="color:#c53030; background:none; border:none; font-weight:bold; cursor:pointer; margin-left:6px;">削除</button>
+        const div = document.createElement('div'); div.className = "bento-card";
+        div.innerHTML = `
+            <div class="bento-info">
+                <div class="bento-emoji-wrapper">${escapeHTML(item.emoji || "🍱")}</div>
+                <div class="bento-details">
+                    <div class="bento-name-row"><div class="bento-name">${escapeHTML(item.name)}</div></div>
+                    <div style="margin-top:4px;">${badgeHtml}</div>
                 </div>
             </div>
-        `;
-    });
-
-    const shopContainer = document.getElementById('shopping-list-container');
-    let shopHtml = '<div class="space-y" style="display:flex; flex-direction:column; gap:6px;">';
-    state.recipes.forEach(r => {
-        const checked = state.shoppingCart.includes(r.id) ? 'checked' : '';
-        shopHtml += `<label class="shopping-item-row"><input type="checkbox" class="shopping-checkbox" ${checked} onchange="toggleShopCart(${r.id})"><span>${escapeHTML(r.emoji || "🍱")}</span> ${escapeHTML(r.name)}を買う</label>`;
-    });
-    shopHtml += '</div><hr style="border:0; border-top:1px solid rgba(0,0,0,0.05); margin:15px 0;"><div class="ing-tag-container">';
-    
-    let allIngredients = [];
-    state.shoppingCart.forEach(id => {
-        const r = state.recipes.find(x => x.id === id);
-        if(r && r.ingredients) allIngredients.push(...r.ingredients.split(/[,\s、，]+/).filter(i => i.trim() !== ""));
-    });
-    allIngredients = [...new Set(allIngredients)];
-    
-    if(allIngredients.length === 0) shopHtml += '<p style="font-size:12px; opacity:0.5; font-weight:bold; text-align:center; width:100%;">上にチェックを入れると、買うものタグが自動生成されます</p>';
-    else {
-        allIngredients.forEach(ing => {
-            const isCrossed = state.crossedOut.includes(ing);
-            shopHtml += `<button onclick="toggleIng('${escapeHTML(ing)}')" class="ing-tag ${isCrossed ? 'crossed' : 'active'}">${escapeHTML(ing)}</button>`;
-        });
-    }
-    shopContainer.innerHTML = shopHtml + '</div>';
-
-    const histList = document.getElementById('history-list'); histList.innerHTML = '';
-    if(state.history.length === 0) histList.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.4; font-size:14px; font-weight:bold;">食べた履歴はまだありません😋</div>';
-    state.history.forEach(h => {
-        histList.innerHTML += `
-            <div class="history-item-row">
-                <div class="history-meta">${h.date}</div>
-                <div class="history-core"><span>${escapeHTML(h.emoji || "🍱")}</span><span>${escapeHTML(h.name)} を1食</span></div>
-                <span class="history-amount">¥${h.savedValue || 600}浮いた!</span>
-                <button onclick="revokeEatenHistory(${h.id})" class="btn-delete-history">✖</button>
+            <div class="bento-qty-control">
+                <button onclick="discardBento(${item.id})" class="btn-circle" style="color:#ff4444; background:rgba(255,0,0,0.1);" title="捨てる">🗑</button>
+                <button onclick="adjustInventory(${item.id}, -1, false)" class="btn-circle" style="margin-left:10px;">-</button>
+                <div class="qty-display">${item.count}</div>
+                <button onclick="adjustInventory(${item.id}, 1, false)" class="btn-circle">+</button>
+                <button onclick="adjustInventory(${item.id}, -1, true)" class="btn-eat" style="margin-left:5px;">食べる</button>
             </div>
         `;
+        list.appendChild(div);
     });
-
-    document.getElementById('settings-save-unit').value = state.saveUnit || 600;
-    document.getElementById('settings-alert-days').value = state.alertDays || 14;
-    document.getElementById('gas-url').value = GAS_URL;
-    if(document.getElementById('settings-auto-sync')) document.getElementById('settings-auto-sync').checked = state.autoSync || false;
 }
 
-// 🔄 PWA強制自動更新ロジックを搭載して登録
+function renderRecipes() {
+    const grid = document.getElementById('recipe-selection');
+    const editList = document.getElementById('recipe-edit-list');
+    if(!grid || !editList) return;
+    grid.innerHTML = ""; editList.innerHTML = "";
+
+    if (state.recipes.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; opacity:0.5; font-size:12px; font-weight:bold;">メニューがありません。<br>「メニュー」タブから登録してね。</div>`;
+        return;
+    }
+
+    state.recipes.forEach(recipe => {
+        // 作る用ボタン
+        const btn = document.createElement('button');
+        btn.innerHTML = `<span style="font-size:24px;">${escapeHTML(recipe.emoji)}</span> <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(recipe.name)}</span>`;
+        btn.onclick = () => startCooking(recipe.id);
+        grid.appendChild(btn);
+
+        // 管理リスト用
+        const row = document.createElement('div'); row.className = "recipe-edit-row";
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                <input type="checkbox" class="shopping-checkbox" ${recipe.inShopping ? 'checked' : ''} onchange="toggleShoppingRecipe(${recipe.id}, this.checked)">
+                <span style="font-size:18px;">${escapeHTML(recipe.emoji)}</span>
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(recipe.name)}</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-text-danger" style="color:var(--accent-color); text-decoration:none;" onclick="editRecipe(${recipe.id})">✏️</button>
+                <button class="btn-text-danger" style="text-decoration:none;" onclick="deleteRecipe(${recipe.id})">🗑️</button>
+            </div>
+        `;
+        editList.appendChild(row);
+    });
+}
+
+function renderShoppingList() {
+    const container = document.getElementById('shopping-list-container'); if(!container) return;
+    container.innerHTML = "";
+    if (state.shoppingList.length === 0) {
+        container.innerHTML = `<p class="text-center opacity-50 text-xs">メニュー管理でチェックした料理の材料がここに自動で並びます</p>`; return;
+    }
+    const tagContainer = document.createElement('div'); tagContainer.className = "ing-tag-container";
+    state.shoppingList.forEach(item => {
+        const tag = document.createElement('button');
+        tag.className = `ing-tag ${item.crossed ? 'crossed' : 'active'}`;
+        tag.innerText = item.name;
+        tag.onclick = () => toggleShoppingItem(item.name);
+        tagContainer.appendChild(tag);
+    });
+    container.appendChild(tagContainer);
+}
+
+function renderHistory() {
+    const list = document.getElementById('history-list'); if(!list) return;
+    list.innerHTML = "";
+    if (state.history.length === 0) { list.innerHTML = `<p style="text-align:center; opacity:0.5; font-size:12px; font-weight:bold;">まだ履歴がありません</p>`; return; }
+    
+    state.history.forEach(item => {
+        const row = document.createElement('div'); row.className = "history-item-row";
+        row.innerHTML = `
+            <div class="history-core">
+                <span style="font-size:18px;">${escapeHTML(item.emoji)}</span>
+                <span>${escapeHTML(item.name)}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span class="history-amount" style="color:var(--accent-color);">+¥${item.savedValue || 600}</span>
+                <span class="history-meta">${item.date}</span>
+            </div>
+            <button onclick="revokeEatenHistory(${item.id})" class="btn-delete-history" title="取り消す">✖</button>
+        `;
+        list.appendChild(row);
+    });
+}
+
+// 🔧 SW登録 (PWAキャッシュ対策)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        const swUrl = 'sw.js?v=' + new Date().getTime(); // 強制バスター
-        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW failed: ', err));
+        const swUrl = 'sw.js?v=' + new Date().getTime(); 
+        navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration failed: ', err));
     });
 }
