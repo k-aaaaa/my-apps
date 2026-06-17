@@ -115,7 +115,7 @@
                     <label>月々の積立額</label>
                     <div class="sim-monthly-control">
                         <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(-1000)">－</button>
-                        <div class="sim-monthly-display maskable">¥<span id="sim-monthly-value">30,000</span></div>
+                        <div class="sim-monthly-display">¥<span id="sim-monthly-value" class="maskable">30,000</span></div>
                         <button class="btn btn-outline sim-adj-btn" onclick="adjustMonthly(1000)">＋</button>
                     </div>
                 </div>
@@ -163,8 +163,8 @@
                     </div>
                 </div>
 
-                <div class="sim-result maskable-list">
-                    <span id="sim-end-age-label">65</span>歳時点の資産予測：<strong>¥<span id="sim-final-amount">0</span></strong>
+                <div class="sim-result">
+                    <span id="sim-end-age-label">65</span>歳時点の資産予測：<strong>¥<span id="sim-final-amount" class="maskable">0</span></strong>
                 </div>
             </div>
         </section>
@@ -271,6 +271,12 @@
                     <button onclick="saveGasUrl()" class="btn btn-outline" style="font-size:12px;">URL保存</button>
                     <button onclick="triggerManualSync()" class="btn btn-share" style="font-size:12px;">☁️ 手動同期</button>
                 </div>
+                
+                <label style="display:flex; align-items:center; gap:8px; margin-top:15px; font-size:13px; font-weight:bold; cursor:pointer;">
+                    <input type="checkbox" id="settings-auto-sync" onchange="toggleAutoSync(this.checked)" style="transform: scale(1.2);">
+                    保存時に自動でクラウドへ同期する
+                </label>
+
                 <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
                 <button onclick="resetData()" class="btn-text-danger w-full" style="text-align:center;">🗑️ アプリの全データをリセット</button>
             </div>

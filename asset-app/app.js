@@ -84,6 +84,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (!state.reports) state.reports = [];
         if (!state.simulation) state.simulation = defaultState.simulation;
         if (!state.customColors) state.customColors = defaultState.customColors;
+        // 古いデータにautoSyncがなかった場合の補完
+        if (state.autoSync === undefined) state.autoSync = false;
     } catch (e) {
         state = JSON.parse(JSON.stringify(defaultState));
     }
@@ -91,6 +93,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     applyCurrentThemeAndColors();
     loadSimulationInputs();
     document.getElementById('gas-url').value = GAS_URL;
+    if(document.getElementById('settings-auto-sync')) document.getElementById('settings-auto-sync').checked = state.autoSync;
 
     // 初期タブ判定（History API対応）
     const initialTab = location.hash ? location.hash.replace('#', '') : 'view-securities';
@@ -113,7 +116,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }, 1200);
 
     ['sim-start-age', 'sim-end-age', 'sim-annual-rate', 'sim-inflation-rate'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateSimulation);
+        if(document.getElementById(id)) document.getElementById(id).addEventListener('input', updateSimulation);
     });
 });
 
@@ -149,8 +152,15 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
+// 🔧 セーブ時に自動同期も走らせる
 async function saveLocal() {
-    try { await saveStateToDB(state); updateUI(); } catch (e) { console.error(e); }
+    try { 
+        await saveStateToDB(state); 
+        updateUI(); 
+        if (state.autoSync) cloudSyncSilent();
+    } catch (e) { 
+        console.error(e); 
+    }
 }
 
 function openModal(id) { vibrate(); document.getElementById(id).classList.remove('hidden'); document.body.classList.add('modal-open'); }
@@ -166,9 +176,9 @@ function toggleGlobalMask() {
         document.querySelectorAll('.maskable-list .history-amount, .maskable-list .sim-detail-value, .maskable-list .sim-result strong, .maskable-list .env-amount, .maskable-list .reward-target-amount, .maskable-list .archive-stat-val').forEach(el => el.innerText = "***,***");
     } else {
         document.body.classList.remove('mask-active');
-        updateUI(); 
-        updateSimulation(); 
     }
+    updateUI(); 
+    updateSimulation(); 
 }
 
 function applyCurrentThemeAndColors() {
@@ -203,6 +213,35 @@ function updateCustomColor(type, value) { state.customColors[state.appTheme || '
 function resetCurrentThemeColors() { vibrate(); if(!confirm("本当にこのテーマの色を初期状態に戻しますか？")) return; state.customColors[state.appTheme || 'theme-stylish'] = { ...defaultState.customColors[state.appTheme || 'theme-stylish'] }; applyCurrentThemeAndColors(); saveLocal(); alert("テーマの色を初期化しました！"); }
 function changeAppTheme(themeName) { vibrate(); state.appTheme = themeName; applyCurrentThemeAndColors(); saveLocal(); if (simChartInstance) { setTimeout(() => { updateSimulation(); }, 50); } }
 
+// ==========================================================================
+// ☁️ GAS サプライズシェア & 同期実装 (復活分)
+// ==========================================================================
+function saveGasUrl() {
+    GAS_URL = document.getElementById('gas-url').value.trim();
+    localStorage.setItem('asset_gas_url', GAS_URL);
+    alert("☁️ 連携URLを保存しました");
+}
+
+function toggleAutoSync(checked) {
+    state.autoSync = checked;
+    saveLocal();
+}
+
+function triggerManualSync() {
+    vibrate();
+    if (!GAS_URL) return alert("⚠️ 先に設定でGASのURLを登録してください");
+    fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "text/plain" } })
+    .then(() => alert("☁️ 手動バックアップが完了しました！"))
+    .catch(() => alert("⚠️ 通信に失敗しました。URLやネットワークを確認してください。"));
+}
+
+function cloudSyncSilent() {
+    if (GAS_URL) fetch(GAS_URL, { method: "POST", body: JSON.stringify(state), headers: { "Content-Type": "text/plain" } }).catch(() => {});
+}
+
+// ==========================================================================
+// 📈 証券管理
+// ==========================================================================
 function recordSecurities() {
     vibrate();
     const amountStr = document.getElementById('input-securities-amount').value;
@@ -235,11 +274,16 @@ function renderSecurities() {
     const current = history[0].amount;
     if (!isMasked) totalEl.innerText = current.toLocaleString();
 
+    // 🔧 修正: 覗き見防止（前回比もしっかりマスキング）
     if (history.length > 1) {
-        const diff = current - history[1].amount;
-        if (diff > 0) { diffEl.innerText = `前回比: +${diff.toLocaleString()}円`; diffEl.className = "total-diff diff-up"; } 
-        else if (diff < 0) { diffEl.innerText = `前回比: ${diff.toLocaleString()}円`; diffEl.className = "total-diff diff-down"; } 
-        else { diffEl.innerText = `前回比: ±0円`; diffEl.className = "total-diff"; }
+        if (isMasked) {
+            diffEl.innerText = `前回比: ***,***`; diffEl.className = "total-diff";
+        } else {
+            const diff = current - history[1].amount;
+            if (diff > 0) { diffEl.innerText = `前回比: +${diff.toLocaleString()}円`; diffEl.className = "total-diff diff-up"; } 
+            else if (diff < 0) { diffEl.innerText = `前回比: ${diff.toLocaleString()}円`; diffEl.className = "total-diff diff-down"; } 
+            else { diffEl.innerText = `前回比: ±0円`; diffEl.className = "total-diff"; }
+        }
     } else {
         diffEl.innerText = "前回比: --"; diffEl.className = "total-diff";
     }
@@ -251,7 +295,11 @@ function renderSecurities() {
     });
 }
 
+// ==========================================================================
+// 🧮 シミュレーション
+// ==========================================================================
 function loadSimulationInputs() {
+    if(!document.getElementById('sim-start-age')) return;
     document.getElementById('sim-start-age').value = state.simulation.startAge; document.getElementById('sim-end-age').value = state.simulation.endAge;
     document.getElementById('sim-monthly-value').innerText = isMasked ? "***,***" : state.simulation.monthly.toLocaleString();
     document.getElementById('sim-annual-rate').value = state.simulation.annualRate; document.getElementById('sim-inflation-rate').value = state.simulation.inflationRate;
@@ -260,6 +308,7 @@ function loadSimulationInputs() {
 function adjustMonthly(delta) { vibrate(); state.simulation.monthly = Math.max(0, state.simulation.monthly + delta); document.getElementById('sim-monthly-value').innerText = isMasked ? "***,***" : state.simulation.monthly.toLocaleString(); updateSimulation(); saveLocal(); }
 
 function updateSimulation() {
+    if(!document.getElementById('sim-start-age')) return;
     let startAge = parseInt(document.getElementById('sim-start-age').value) || 25;
     let endAge = parseInt(document.getElementById('sim-end-age').value) || 65;
     const monthly = state.simulation.monthly;
@@ -293,6 +342,7 @@ function updateSimulation() {
 function renderSimChart() {
     if (typeof Chart === 'undefined') return; 
     const ctx = document.getElementById('simChart');
+    if (!ctx) return;
     if (simChartInstance) simChartInstance.destroy();
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#1d1d1f';
 
@@ -322,6 +372,9 @@ function updateSliderDisplay(index) {
 }
 function onSimSliderChange(value) { vibrate(); updateSliderDisplay(value); }
 
+// ==========================================================================
+// ✉️ 封筒管理
+// ==========================================================================
 function toggleEnvManagement() { vibrate(); document.getElementById('env-management-panel').classList.toggle('hidden'); }
 
 function openEnvelopeModal(id = null) {
@@ -399,6 +452,7 @@ function updateEnvelopeMoney(type) {
 
 function renderEnvelopes() {
     const grid = document.getElementById('envelopes-grid'); const mContainer = document.getElementById('management-envelope-list');
+    if(!grid || !mContainer) return;
     grid.innerHTML = ""; mContainer.innerHTML = "";
 
     if (state.envelopes.length === 0) {
@@ -422,6 +476,9 @@ function renderEnvelopes() {
     });
 }
 
+// ==========================================================================
+// 🎁 ご褒美＆振り返り
+// ==========================================================================
 function addRewardTarget() {
     vibrate();
     const amountStr = document.getElementById('reward-target-amount').value;
@@ -458,6 +515,7 @@ function closeAchievementModal() { closeModal('modal-achievement'); setTimeout(s
 
 function renderRewards() {
     const pendingList = document.getElementById('reward-pending-list'); const achievedList = document.getElementById('reward-achieved-list');
+    if(!pendingList || !achievedList) return;
     pendingList.innerHTML = ""; achievedList.innerHTML = "";
     const pendingRewards = state.rewards.filter(r => !r.achieved).sort((a, b) => a.amount - b.amount);
     const achievedRewards = state.rewards.filter(r => r.achieved).sort((a, b) => b.amount - a.amount);
@@ -521,6 +579,9 @@ function renderMonthlyArchive() {
 }
 function deleteArchiveItem(id) { vibrate(); if (confirm("この記録を削除しますか？")) { state.reports = state.reports.filter(r => r.id !== id); saveLocal(); } }
 
+// ==========================================================================
+// 🔒 セキュリティ管理
+// ==========================================================================
 function checkSecurityLock() { 
     if (state.pin) { 
         document.getElementById('lock-screen').classList.remove('hidden'); 
@@ -569,7 +630,6 @@ function saveLockSetup() {
 }
 function removeLock() { vibrate(); if (confirm("本当にロックを解除しますか？")) { state.pin = null; state.secretQuestion = null; state.secretAnswer = null; saveLocal(); alert("ロックをオフにしました。"); } }
 
-// 🔧 リセット不発を完全に防ぐDB削除ロジック
 function resetData() {
     vibrate();
     if(!confirm("⚠️ 最終警告\n本当にすべてのデータを初期化（全消去）しますか？\n（復元するにはエクスポートしたJSONファイルが必要です）")) return;
@@ -609,6 +669,7 @@ function importData(e) {
 function updateUI() {
     renderSecurities(); renderEnvelopes(); renderRewards(); renderMonthlyArchive();
     const lockText = document.getElementById('lock-status-text'); const btnSetup = document.getElementById('btn-setup-lock'); const btnRemove = document.getElementById('btn-remove-lock');
+    if(!lockText) return;
     if (state.pin) { lockText.innerText = "設定済み (ON)"; lockText.style.color = "#4b7bff"; btnSetup.innerText = "パスワードを変更する"; btnRemove.classList.remove('hidden'); } 
     else { lockText.innerText = "未設定 (OFF)"; lockText.style.color = "inherit"; btnSetup.innerText = "ロックを設定する"; btnRemove.classList.add('hidden'); }
 }
