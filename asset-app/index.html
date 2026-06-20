@@ -258,7 +258,7 @@
                 <h2 class="panel-title">💾 究極のデータバックアップ</h2>
                 <p style="font-size:11px; opacity:0.8; margin-bottom:10px; color:#ff4444; font-weight:bold;">※iPhone(Safari)は7日間アクセスしないとデータが消去される仕様があります。必ず「ホーム画面に追加」からアプリ化してください。</p>
                 <button onclick="exportData()" class="btn btn-primary w-full" style="margin-bottom:10px;">📥 データを書き出す (保存)</button>
-                <label class="btn btn-outline w-full text-center" style="display:block; cursor:pointer;">
+                <label class="btn btn-outline w-full" style="display:block; text-align:center; cursor:pointer;">
                     📤 ファイルからデータを復元する
                     <input type="file" accept=".json" class="hidden" onchange="importData(event)">
                 </label>
@@ -326,7 +326,7 @@
             <input type="hidden" id="envelope-edit-id">
             <div class="form-group">
                 <label>アイコン (絵文字)</label>
-                <input type="text" id="env-input-emoji" class="form-input text-center" placeholder="例: 🚗, ✈️" maxlength="4" value="💰">
+                <input type="text" id="env-input-emoji" class="form-input" style="text-align: center;" placeholder="例: 🚗, ✈️" value="💰">
             </div>
             <div class="form-group">
                 <label>封筒の名前</label>

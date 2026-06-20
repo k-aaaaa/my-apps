@@ -1,6 +1,6 @@
 function vibrate() { if (navigator.vibrate) navigator.vibrate(15); }
 
-// 文字列の無害化（XSS対策）
+// 🛡️ 文字列の無害化（XSS対策）
 function escapeHTML(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -84,7 +84,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (!state.reports) state.reports = [];
         if (!state.simulation) state.simulation = defaultState.simulation;
         if (!state.customColors) state.customColors = defaultState.customColors;
-        // 古いデータにautoSyncがなかった場合の補完
         if (state.autoSync === undefined) state.autoSync = false;
     } catch (e) {
         state = JSON.parse(JSON.stringify(defaultState));
@@ -95,7 +94,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('gas-url').value = GAS_URL;
     if(document.getElementById('settings-auto-sync')) document.getElementById('settings-auto-sync').checked = state.autoSync;
 
-    // 初期タブ判定（History API対応）
     const initialTab = location.hash ? location.hash.replace('#', '') : 'view-securities';
 
     setTimeout(() => {
@@ -120,7 +118,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
 });
 
-// 🔙 スワイプ戻る防止 (History API)
 window.addEventListener('popstate', (e) => {
     const target = e.state ? e.state.tab : 'view-securities';
     switchTab(target, false);
@@ -152,7 +149,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
     });
 });
 
-// 🔧 セーブ時に自動同期も走らせる
 async function saveLocal() {
     try { 
         await saveStateToDB(state); 
@@ -211,7 +207,20 @@ function applyCurrentThemeAndColors() {
 }
 function updateCustomColor(type, value) { state.customColors[state.appTheme || 'theme-stylish'][type] = value; applyCurrentThemeAndColors(); saveLocal(); }
 function resetCurrentThemeColors() { vibrate(); if(!confirm("本当にこのテーマの色を初期状態に戻しますか？")) return; state.customColors[state.appTheme || 'theme-stylish'] = { ...defaultState.customColors[state.appTheme || 'theme-stylish'] }; applyCurrentThemeAndColors(); saveLocal(); alert("テーマの色を初期化しました！"); }
-function changeAppTheme(themeName) { vibrate(); state.appTheme = themeName; applyCurrentThemeAndColors(); saveLocal(); if (simChartInstance) { setTimeout(() => { updateSimulation(); }, 50); } }
+
+// 🔧 修正: グラフのテーマ変更遅延問題を解消
+function changeAppTheme(themeName) { 
+    vibrate(); 
+    state.appTheme = themeName; 
+    applyCurrentThemeAndColors(); 
+    saveLocal(); 
+    if (simChartInstance) { 
+        setTimeout(() => { 
+            // 強制的にグラフを再描画させて色を最新にする
+            renderSimChart(); 
+        }, 100); 
+    } 
+}
 
 // ==========================================================================
 // ☁️ GAS サプライズシェア & 同期実装 (復活分)
@@ -274,7 +283,6 @@ function renderSecurities() {
     const current = history[0].amount;
     if (!isMasked) totalEl.innerText = current.toLocaleString();
 
-    // 🔧 修正: 覗き見防止（前回比もしっかりマスキング）
     if (history.length > 1) {
         if (isMasked) {
             diffEl.innerText = `前回比: ***,***`; diffEl.className = "total-diff";
@@ -344,7 +352,10 @@ function renderSimChart() {
     const ctx = document.getElementById('simChart');
     if (!ctx) return;
     if (simChartInstance) simChartInstance.destroy();
-    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#1d1d1f';
+    
+    // CSS変数が読み込まれるまでのラグを考慮して、もし空ならデフォルトのダークカラーにする
+    let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim();
+    if (!accentColor) accentColor = '#1d1d1f';
 
     simChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -397,7 +408,12 @@ function openEnvelopeModal(id = null) {
 function saveEnvelope() {
     vibrate();
     const id = document.getElementById('envelope-edit-id').value;
-    const emoji = document.getElementById('env-input-emoji').value.substring(0,4) || "✉️";
+    
+    // 🔧 修正: Array.from()[0] を使って文字化け（千切れ）を完全に防止
+    const emojiStr = document.getElementById('env-input-emoji').value.trim() || "✉️";
+    const emojiArray = Array.from(emojiStr);
+    const emoji = emojiArray.length > 0 ? emojiArray[0] : "✉️";
+    
     const name = document.getElementById('env-input-name').value.trim();
     const targetStr = document.getElementById('env-input-target').value;
     const color = document.getElementById('env-input-color').value;
@@ -597,7 +613,6 @@ function verifyPin() {
         document.getElementById('lock-screen').classList.add('hidden');
         document.getElementById('main-app-content').style.visibility = 'visible';
         
-        // 初回起動時の計算をここで実行
         const initialTab = location.hash ? location.hash.replace('#', '') : 'view-securities';
         switchTab(initialTab, false);
         updateUI(); updateSimulation(); check25thAutomated(); checkAchievements();
